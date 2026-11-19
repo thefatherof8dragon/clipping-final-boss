@@ -1,0 +1,29 @@
+# Secrets & Environment variables
+.env
+.env.*
+!.env.example
+
+# Media, Cache, and User Data directories
+data/
+output/
+downloads/
+scratch/
+*.log
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python compiled files & test caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# System and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clipping Final Boss — Local AI Video & Stream Clipper</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-mark" aria-hidden="true">🔥</div>
+      <div class="brand-text">
+        <span class="logo-title">Clipping Final Boss</span>
+        <span class="logo-subtitle">Local-Only AI Clipper</span>
+      </div>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Main Navigation">
+      <button class="tab-btn active" data-tab="tab-get-started" role="tab" aria-selected="true" id="tabnav-get-started">Get Started</button>
+      <button class="tab-btn" data-tab="tab-clips" role="tab" aria-selected="false" id="tabnav-clips">Clips</button>
+      <button class="tab-btn" data-tab="tab-streamers" role="tab" aria-selected="false" id="tabnav-streamers">Streamers</button>
+      <button class="tab-btn" data-tab="tab-settings" role="tab" aria-selected="false" id="tabnav-settings">Settings</button>
+    </nav>
+
+    <div class="topbar-right-group">
+      <button type="button" id="btn-system-health" class="health-status-pill" title="Check system health, dependencies, and Windows path safety">
+        <span class="health-dot" id="health-dot"></span>
+        <span id="health-label">System: Healthy</span>
+      </button>
+
+      <div class="topbar-note" title="All processing happens on your local machine. No data sent to third-party servers.">
+        <span class="lock-icon" aria-hidden="true">🔒</span>
+        <span class="topbar-note-text">Local only, keys stay on your machine (127.0.0.1:8000)</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- ==================== GET STARTED TAB ==================== -->
+    <section id="tab-get-started" class="tab-view active">
+      <div class="get-started-wrapper">
+        <!-- Black Hole Hero Section -->
+        <div class="blackhole-hero-card" id="blackhole-hero">
+          <canvas id="blackhole-canvas" class="blackhole-canvas" aria-hidden="true"></canvas>
+          <div class="blackhole-overlay">
+            <div class="hero-content-col">
+              <div class="hero-pill-badge">
+                <span class="badge-fire">🔥</span>
+                <span>Clipping Final Boss • 100% Local & Free</span>
+              </div>
+
+              <h1 class="hero-main-title">
+                Final Boss<br>
+                <span class="hero-gradient-text">Get Started</span>
+              </h1>
+
+              <p class="hero-lead-text">
+                Leave free clipping on that first page. Turn long YouTube videos, Twitch streams, and raw footage into ranked 9:16 short clips with animated captions and AI virality scoring—powered completely on your local hardware. Zero API keys, zero watermarks, zero limits.
+              </p>
+
+              <!-- Quick Free Clipping on First Page -->
+              <div class="hero-quick-clip-panel">
+                <div class="quick-clip-header">
+                  <span class="quick-clip-title">✨ Leave Free Clipping On That First Page</span>
+                  <span class="quick-clip-subtitle">Paste any URL or local video path to start instantly</span>
+                </div>
+                <div class="quick-clip-input-group">
+                  <input
+                    type="text"
+                    id="hero-video-url"
+                    class="quick-url-input"
+                    placeholder="Paste YouTube, Twitch, Kick link or local file path..."
+                  >
+                  <button type="button" id="hero-btn-start" class="btn-primary hero-clip-submit">
+                    <span>Start Free Clipping</span>
+                    <span class="arrow-icon">→</span>
+                  </button>
+                </div>
+                <div class="quick-clip-features-row">
+                  <span class="quick-chip">⚡ 100% Free Forever</span>
+                  <span class="quick-chip">🔒 Local-Only (No Cloud Keys Required)</span>
+                  <span class="quick-chip">🎬 Auto 9:16 Shorts + Kinetic Captions</span>
+                </div>
+              </div>
+
+              <div class="hero-actions-row">
+                <button type="button" class="btn-secondary hero-view-clips-btn" id="btn-hero-browse-clips">
+                  <span>Browse Clips Grid</span>
+                </button>
+                <a href="#get-started-features-section" class="hero-learn-link">
+                  <span>Explore Features ↓</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual Feature Showcase with Unsplash Stock Images & Highlights -->
+        <div class="get-started-features-section" id="get-started-features-section">
+          <div class="section-headline-center">
+            <span class="section-eyebrow">Leave Free Clipping On That First Page</span>
+            <h2 class="section-title">Everything You Need to Dominate Short-Form Video</h2>
+            <p class="section-subtitle">
+              Download, transcribe, rank, edit, and export viral clips in seconds. All offline, private, and open-source.
+            </p>
+          </div>
+
+          <div class="features-cards-grid">
+            <!-- Feature Card 1 -->
+            <div class="feature-card">
+              <div class="feature-img-wrapper">
+                <img
+                  src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=800&q=80"
+                  alt="Video editing studio timeline"
+                  class="feature-img"
+                  loading="lazy"
+                >
+                <span class="feature-img-badge badge-purple">9:16 Auto Layout</span>
+              </div>
+              <div class="feature-card-body">
+                <h3 class="feature-card-title">Smart Frame Re-centering</h3>
+                <p class="feature-card-desc">
+                  Automatically crop 16:9 widescreen or blur-fit backgrounds to produce flawless vertical videos tailored for TikTok, Reels, and Shorts.
+                </p>
+              </div>
+            </div>
+
+            <!-- Feature Card 2 -->
+            <div class="feature-card">
+              <div class="feature-img-wrapper">
+                <img
+                  src="https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?auto=format&fit=crop&w=800&q=80"
+                  alt="Streaming broadcast setup"
+                  class="feature-img"
+                  loading="lazy"
+                >
+                <span class="feature-img-badge badge-pink">Stream Watcher</span>
+              </div>
+              <div class="feature-card-body">
+                <h3 class="feature-card-title">Pinned Streamer Watcher</h3>
+                <p class="feature-card-desc">
+                  Pin your favorite Twitch, YouTube, or Kick creators. Real-time live status detection, viewer counts, and rolling chat spike recording.
+                </p>
+              </div>
+            </div>
+
+            <!-- Feature Card 3 -->
+            <div class="feature-card">
+              <div class="feature-img-wrapper">
+                <img
+                  src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"
+                  alt="Dynamic captions and audio visualization"
+                  class="feature-img"
+                  loading="lazy"
+                >
+                <span class="feature-img-badge badge-amber">10 Caption Templates</span>
+              </div>
+              <div class="feature-card-body">
+                <h3 class="feature-card-title">Kinetic Word Animations</h3>
+                <p class="feature-card-desc">
+                  Hormozi, MrBeast, Neon Pulse, Minimal Clean, and custom styled caption animations rendered with pixel-perfect ffmpeg fidelity.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== CLIPS TAB ==================== -->
+    <section id="tab-clips" class="tab-view">
+      <div class="clips-page-wrapper">
+        <!-- Input & Controls Bar Card -->
+        <div class="card source-bar-card">
+          <div class="source-card-header">
+            <h2 class="card-title">Video or stream link</h2>
+            <span class="card-desc">Turn any YouTube, Twitch, Kick video or local file into viral short clips</span>
+          </div>
+
+          <form id="clip-form">
+            <div class="form-main-row">
+              <div class="url-input-wrapper">
+                <input
+                  type="text"
+                  id="video-url"
+                  placeholder="Paste YouTube, Twitch, Kick link or local video file path..."
+                  required
+                  aria-label="Video URL or file path"
+                >
+              </div>
+
+              <div class="top-n-wrapper">
+                <label for="top-n" class="mini-label">Top N</label>
+                <input type="number" id="top-n" value="5" min="1" max="20" aria-label="Number of clips to generate">
+              </div>
+
+              <button type="submit" id="btn-make-clips" class="btn-primary">
+                <span class="btn-icon" aria-hidden="true">⚡</span>
+                <span class="btn-text">Make clips</span>
+              </button>
+            </div>
+
+            <!-- Length Chips Row -->
+            <div class="length-selector-row">
+              <span class="length-label">Target clip length:</span>
+              <div class="length-chips" role="radiogroup" aria-label="Target clip length">
+                <button type="button" class="length-chip active" data-length="auto" aria-checked="true" role="radio">
+                  <span class="chip-title">Auto</span>
+                  <span class="chip-sub">&lt; 90 s</span>
+                </button>
+                <button type="button" class="length-chip" data-length="under_30" aria-checked="false" role="radio">
+                  <span class="chip-title">Under 30 s</span>
+                  <span class="chip-sub">15–30 s</span>
+                </button>
+                <button type="button" class="length-chip" data-length="30_60" aria-checked="false" role="radio">
+                  <span class="chip-title">30 to 60 s</span>
+                  <span class="chip-sub">Standard</span>
+                </button>
+                <button type="button" class="length-chip" data-length="60_90" aria-checked="false" role="radio">
+                  <span class="chip-title">60 to 90 s</span>
+                  <span class="chip-sub">Story arc</span>
+                </button>
+                <button type="button" class="length-chip" data-length="over_90" aria-checked="false" role="radio">
+                  <span class="chip-title">Over 90 s</span>
+                  <span class="chip-sub">Deep dive</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Staged Pipeline Progress Box (Problem 1) -->
+            <div id="progress-container" class="progress-box hidden" role="region" aria-live="polite">
+              <div class="pipeline-stages">
+                <div class="stage-step" id="stage-download">
+                  <span class="step-num">1</span>
+                  <span class="step-label">Download</span>
+                </div>
+                <div class="stage-arrow">→</div>
+                <div class="stage-step" id="stage-transcribe">
+                  <span class="step-num">2</span>
+                  <span class="step-label">Whisper AI</span>
+                </div>
+                <div class="stage-arrow">→</div>
+                <div class="stage-step" id="stage-detect">
+                  <span class="step-num">3</span>
+                  <span class="step-label">Detect Hooks</span>
+                </div>
+                <div class="stage-arrow">→</div>
+                <div class="stage-step" id="stage-rank">
+                  <span class="step-num">4</span>
+                  <span class="step-label">Rank & Cut</span>
+                </div>
+                <div class="stage-arrow">→</div>
+                <div class="stage-step" id="stage-finalize">
+                  <span class="step-num">5</span>
+                  <span class="step-label">Ready</span>
+                </div>
+              </div>
+
+              <div class="progress-bar-bg">
+                <div id="progress-bar-fill" class="progress-bar-fill"></div>
+              </div>
+              <div class="progress-status-row">
+                <span id="progress-text" class="progress-label">Preparing pipeline...</span>
+                <span id="progress-percent" class="progress-pct">0%</span>
+              </div>
+
+              <!-- Error Alert Container (Problem 1) -->
+              <div id="pipeline-error-box" class="pipeline-error-box hidden">
+                <div class="error-msg-header">
+                  <span class="error-icon">⚠️</span>
+                  <strong id="pipeline-error-title">Processing Halted</strong>
+                </div>
+                <p id="pipeline-error-desc" class="error-desc"></p>
+                <div class="error-actions">
+                  <button type="button" id="btn-copy-error" class="btn btn-secondary btn-sm">📋 Copy error details</button>
+                  <button type="button" id="btn-error-settings" class="btn btn-secondary btn-sm hidden">Check Settings & API Keys</button>
+                  <button type="button" id="btn-dismiss-error" class="btn btn-subtle btn-sm">Dismiss</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Video Grid Container -->
+        <section class="clips-section">
+          <!-- Grid Header & Toolbar -->
+          <div class="grid-toolbar">
+            <div class="toolbar-left">
+              <h2 class="section-heading">Ranked clips</h2>
+              <span id="clips-count-badge" class="badge">0 clips</span>
+              <span id="chosen-length-badge" class="badge badge-accent hidden">Auto (&lt; 90s)</span>
+            </div>
+
+            <div class="toolbar-right">
+              <label class="select-all-label">
+                <input type="checkbox" id="select-all-checkbox" aria-label="Select all clips">
+                <span>Select all</span>
+              </label>
+
+              <div class="bulk-actions">
+                <button type="button" id="btn-bulk-download" class="btn-subtle" disabled aria-label="Download selected clips">
+                  ⬇️ Download (<span id="bulk-download-count">0</span>)
+                </button>
+                <button type="button" id="btn-bulk-schedule" class="btn-subtle" disabled aria-label="Schedule selected clips">
+                  📅 Schedule (<span id="bulk-schedule-count">0</span>)
+                </button>
+              </div>
+
+              <div class="sort-wrapper">
+                <label for="sort-select" class="mini-label">Sort:</label>
+                <select id="sort-select" aria-label="Sort clips">
+                  <option value="score">Highest score</option>
+                  <option value="newest">Newest first</option>
+                  <option value="longest">Longest duration</option>
+                  <option value="shortest">Shortest duration</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Cards Grid -->
+          <div id="clips-grid" class="video-grid" role="region" aria-label="Ranked video clips">
+            <!-- Problem 2: Clean Empty State -->
+            <div class="empty-state-card" id="empty-state-clips">
+              <div class="empty-icon">🎬</div>
+              <h3>Paste a link to make your first clip</h3>
+              <p>Enter any YouTube, Twitch, Kick video link or local file path above to generate ranked 9:16 short clips.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ==================== CLIP EDITOR SCREEN (STUDIO) ==================== -->
+    <div id="clip-editor-screen" class="editor-screen hidden" role="dialog" aria-modal="true" aria-label="Clip Studio Editor">
+      <!-- Editor Top Bar -->
+      <header class="editor-topbar">
+        <div class="editor-topbar-left">
+          <button type="button" id="editor-back-btn" class="btn-back" aria-label="Return to clips grid">
+            <span class="back-arrow" aria-hidden="true">←</span>
+            <span>Clips</span>
+          </button>
+          <div class="editor-title-container">
+            <input type="text" id="editor-title-input" class="editor-title-field" placeholder="Clip Title" aria-label="Clip Title">
+          </div>
+          <span id="editor-saved-badge" class="saved-badge">✓ Saved</span>
+        </div>
+
+        <div class="editor-topbar-right">
+          <div class="undo-redo-group">
+            <button type="button" id="btn-undo" class="btn-icon-square" title="Undo (Ctrl+Z)" aria-label="Undo">↩</button>
+            <button type="button" id="btn-redo" class="btn-icon-square" title="Redo (Ctrl+Y)" aria-label="Redo">↪</button>
+          </div>
+          <button type="button" id="btn-export-clip" class="btn-primary btn-export" aria-label="Export rendered clip">
+            <span>Render & Export</span>
+            <span class="btn-icon">⚡</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Editor Body -->
+      <div class="editor-body editor-workspace">
+        <!-- 1. Left Icon Rail -->
+        <aside class="tool-rail" aria-label="Editor Tools Navigation">
+          <button type="button" class="rail-btn active" data-rail-tab="captions" title="Edit Captions" aria-label="Captions">
+            <span class="rail-icon">💬</span>
+            <span class="rail-label">Captions</span>
+          </button>
+          <button type="button" class="rail-btn" data-rail-tab="templates" title="Caption Styles & Presets" aria-label="Styles">
+            <span class="rail-icon">🎨</span>
+            <span class="rail-label">Styles</span>
+          </button>
+          <button type="button" class="rail-btn" data-rail-tab="reframe" title="Aspect Ratio & Framing" aria-label="Reframe">
+            <span class="rail-icon">📐</span>
+            <span class="rail-label">Reframe</span>
+          </button>
+          <button type="button" class="rail-btn" data-rail-tab="hook" title="Hook Overlay" aria-label="Hook">
+            <span class="rail-icon">🪝</span>
+            <span class="rail-label">Hook</span>
+          </button>
+          <button type="button" class="rail-btn" data-rail-tab="ai" title="AI Metadata" aria-label="AI Metadata">
+            <span class="rail-icon">✨</span>
+            <span class="rail-label">Metadata</span>
+          </button>
+        </aside>
+
+        <!-- 2. Left Tool Panel -->
+        <div class="tool-panel">
+          <!-- Captions Tab Panel (Problem 6: Word timing & editing) -->
+          <div id="panel-tab-captions" class="rail-panel-content active">
+            <div class="panel-header">
+              <h3 class="panel-title">Captions</h3>
+              <div class="toggle-pill" role="tablist">
+                <button type="button" id="btn-toggle-words" class="pill-btn active" role="tab" aria-selected="true">Words</button>
+                <button type="button" id="btn-toggle-lines" class="pill-btn" role="tab" aria-selected="false">Lines</button>
+              </div>
+            </div>
+
+            <div class="panel-actions-row">
+              <button type="button" id="btn-regen-captions" class="btn-small-subtle" title="Regenerate captions with AI">
+                ✨ Regenerate
+              </button>
+              <label class="btn-small-subtle file-label" title="Import an SRT subtitle file">
+                📄 Import SRT
+                <input type="file" id="srt-file-input" accept=".srt" style="display:none">
+              </label>
+              <label class="captions-switch">
+                <input type="checkbox" id="captions-toggle-check" checked>
+                <span>Burn captions</span>
+              </label>
+            </div>
+
+            <!-- Inline Word Timing Editor Card (Problem 6) -->
+            <div id="word-edit-popover" class="word-edit-card hidden">
+              <div class="word-edit-header">
+                <strong>Edit Word & Timing</strong>
+                <button type="button" id="btn-close-word-edit" class="btn-tiny-close">✕</button>
+              </div>
+              <div class="word-edit-fields">
+                <input type="text" id="edit-word-text" class="word-edit-input" placeholder="Word text">
+                <div class="timing-inputs-row">
+                  <div class="timing-col">
+                    <label>Start (s)</label>
+                    <input type="number" id="edit-word-start" step="0.05" min="0" class="time-input">
+                  </div>
+                  <div class="timing-col">
+                    <label>End (s)</label>
+                    <input type="number" id="edit-word-end" step="0.05" min="0" class="time-input">
+                  </div>
+                </div>
+                <button type="button" id="btn-save-word-edit" class="btn-primary btn-save-word">Apply Word</button>
+              </div>
+            </div>
+
+            <!-- Caption Words/Lines List -->
+            <div id="editor-captions-list" class="captions-scroll-list" role="list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Styles Tab Panel (Problem 6: Complete Style Section) -->
+          <div id="panel-tab-templates" class="rail-panel-content">
+            <div class="panel-header">
+              <h3 class="panel-title">Caption Style & Presets</h3>
+            </div>
+            <div class="style-controls-section">
+              <div class="form-group style-toggle-group">
+                <label class="captions-switch">
+                  <input type="checkbox" id="style-captions-on-toggle" checked>
+                  <strong>Burn Captions on Video</strong>
+                </label>
+                <span class="subtext">Toggle subtitles on or off for this clip</span>
+              </div>
+
+              <!-- 3+ Caption Presets -->
+              <div class="form-group">
+                <label class="control-label">Style Presets</label>
+                <div class="preset-cards-grid" role="radiogroup" aria-label="Caption Presets">
+                  <button type="button" class="preset-card-btn active" data-style-preset="pop">
+                    <span class="preset-name">Bold Highlight</span>
+                    <span class="preset-sub">Hormozi / Active zoom</span>
+                  </button>
+                  <button type="button" class="preset-card-btn" data-style-preset="minimal">
+                    <span class="preset-name">Minimal Clean</span>
+                    <span class="preset-sub">Cinematic drop shadow</span>
+                  </button>
+                  <button type="button" class="preset-card-btn" data-style-preset="box">
+                    <span class="preset-name">Boxed Neon</span>
+                    <span class="preset-sub">Translucent neon rounded box</span>
+                  </button>
+                  <button type="button" class="preset-card-btn" data-style-preset="karaoke">
+                    <span class="preset-name">Karaoke Pulse</span>
+                    <span class="preset-sub">Color wave on spoken word</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Font Family -->
+              <div class="form-group">
+                <label for="style-font-select" class="control-label">Font Family</label>
+                <select id="style-font-select" class="style-select">
+                  <option value="Montserrat">Montserrat (Modern Bold)</option>
+                  <option value="Impact">Impact (Classic Viral)</option>
+                  <option value="Inter">Inter (Clean Modern)</option>
+                  <option value="Arial Black">Arial Black (Heavy)</option>
+                  <option value="Trebuchet MS">Trebuchet MS (Dynamic)</option>
+                </select>
+              </div>
+
+              <!-- Font Size Slider -->
+              <div class="form-group">
+                <div class="slider-header">
+                  <label for="style-font-size-slider" class="control-label">Font Size</label>
+                  <span id="style-font-size-val" class="slider-val">28px</span>
+                </div>
+                <input type="range" id="style-font-size-slider" min="16" max="52" value="28" step="1" class="style-slider">
+              </div>
+
+              <!-- Colors -->
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label for="style-text-color" class="control-label">Text Color</label>
+                  <div class="color-picker-wrapper">
+                    <input type="color" id="style-text-color" value="#FFFFFF" class="color-input">
+                    <span id="style-text-color-hex" class="color-hex">#FFFFFF</span>
+                  </div>
+                </div>
+                <div class="form-group flex-1">
+                  <label for="style-highlight-color" class="control-label">Highlight Color</label>
+                  <div class="color-picker-wrapper">
+                    <input type="color" id="style-highlight-color" value="#FFE600" class="color-input">
+                    <span id="style-highlight-color-hex" class="color-hex">#FFE600</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vertical Position -->
+              <div class="form-group">
+                <label class="control-label">Vertical Position</label>
+                <div class="position-btn-group" role="radiogroup">
+                  <button type="button" class="pos-btn" data-pos="top">Top (18%)</button>
+                  <button type="button" class="pos-btn" data-pos="middle">Middle (50%)</button>
+                  <button type="button" class="pos-btn active" data-pos="bottom">Bottom (82%)</button>
+                </div>
+              </div>
+
+              <div class="form-group style-actions">
+                <button type="button" id="btn-apply-style-render" class="btn-primary" style="width:100%;">
+                  💾 Save & Re-render Clip
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reframe Tab Panel -->
+          <div id="panel-tab-reframe" class="rail-panel-content">
+            <div class="panel-header">
+              <h3 class="panel-title">Aspect Ratio & Framing</h3>
+            </div>
+            <div class="reframe-section">
+              <label class="control-label">Aspect Ratio</label>
+              <div class="ratio-options-grid">
+                <button type="button" class="ratio-option-btn active" data-ratio="9:16">
+                  <span class="ratio-shape ratio-9-16-shape"></span>
+                  <span class="ratio-text">9:16 Vertical</span>
+                </button>
+                <button type="button" class="ratio-option-btn" data-ratio="1:1">
+                  <span class="ratio-shape ratio-1-1-shape"></span>
+                  <span class="ratio-text">1:1 Square</span>
+                </button>
+                <button type="button" class="ratio-option-btn" data-ratio="4:5">
+                  <span class="ratio-shape ratio-4-5-shape"></span>
+                  <span class="ratio-text">4:5 Portrait</span>
+                </button>
+                <button type="button" class="ratio-option-btn" data-ratio="16:9">
+                  <span class="ratio-shape ratio-16-9-shape"></span>
+                  <span class="ratio-text">16:9 Landscape</span>
+                </button>
+              </div>
+
+              <label class="control-label" style="margin-top: 18px;">Framing Mode</label>
+              <div class="framing-options">
+                <button type="button" class="framing-btn active" data-framing="blur_fit">
+                  <strong>Blur Fit</strong>
+                  <span class="subtext">Original aspect with cinematic blurred background</span>
+                </button>
+                <button type="button" class="framing-btn" data-framing="crop_to_face">
+                  <strong>Crop to Face</strong>
+                  <span class="subtext">Intelligent face detection centered framing</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hook Tab Panel (Problem 7) -->
+          <div id="panel-tab-hook" class="rail-panel-content">
+            <div class="panel-header">
+              <h3 class="panel-title">Hook Banner Overlay</h3>
+              <button type="button" id="btn-suggest-hooks" class="btn-small-subtle">✨ AI Hooks</button>
+            </div>
+            <div class="hook-settings">
+              <div class="form-group">
+                <label class="captions-switch">
+                  <input type="checkbox" id="hook-overlay-enable-toggle" checked>
+                  <strong>Show Top Hook Banner</strong>
+                </label>
+                <span class="subtext">Grabs viewer attention during the first 3–5 seconds</span>
+              </div>
+
+              <div class="form-group">
+                <label for="hook-text-input" class="control-label">Hook Text (First 3-5 seconds)</label>
+                <textarea id="hook-text-input" rows="2" placeholder="e.g. WAIT FOR THE END..."></textarea>
+              </div>
+
+              <!-- 3 AI Hook Alternatives (Problem 7) -->
+              <div class="form-group">
+                <label class="control-label">AI-Suggested Hook Alternatives (Click to apply)</label>
+                <div id="hook-alternatives-list" class="hook-alternatives-list">
+                  <button type="button" class="hook-alt-btn" data-alt-angle="Curiosity">
+                    <span class="alt-badge">Curiosity</span>
+                    <span class="alt-text">Nobody expected what came next...</span>
+                  </button>
+                  <button type="button" class="hook-alt-btn" data-alt-angle="Shock">
+                    <span class="alt-badge badge-red">Shock</span>
+                    <span class="alt-text">The most unbelievable reaction live!</span>
+                  </button>
+                  <button type="button" class="hook-alt-btn" data-alt-angle="Question">
+                    <span class="alt-badge badge-yellow">Question</span>
+                    <span class="alt-text">Why did nobody see this coming?!</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Hook Style & Position -->
+              <div class="form-group">
+                <label class="control-label">Hook Banner Style</label>
+                <div class="hook-styles-grid">
+                  <button type="button" class="hook-style-btn active" data-hook-style="red_alert">Red Alert</button>
+                  <button type="button" class="hook-style-btn" data-hook-style="viral_yellow">Viral Yellow</button>
+                  <button type="button" class="hook-style-btn" data-hook-style="dark_glass">Dark Minimal</button>
+                  <button type="button" class="hook-style-btn" data-hook-style="neon_purple">Neon Purple</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="control-label">Position</label>
+                <div class="hook-pos-grid">
+                  <button type="button" class="hook-pos-btn active" data-hook-pos="top">Top</button>
+                  <button type="button" class="hook-pos-btn" data-hook-pos="center">Center</button>
+                  <button type="button" class="hook-pos-btn" data-hook-pos="bottom">Bottom</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Metadata Tab Panel -->
+          <div id="panel-tab-ai" class="rail-panel-content">
+            <div class="panel-header">
+              <h3 class="panel-title">AI Social Metadata</h3>
+              <button type="button" id="btn-regen-metadata" class="btn-small-subtle">✨ Regenerate</button>
+            </div>
+            <div class="ai-meta-fields">
+              <label for="clip-caption-input" class="control-label">Video Caption Description</label>
+              <textarea id="clip-caption-input" rows="3" placeholder="Engaging description..."></textarea>
+
+              <label for="clip-hashtags-input" class="control-label">Viral Hashtags</label>
+              <input type="text" id="clip-hashtags-input" placeholder="#shorts #viral #trending">
+
+              <div class="settings-hint-box">
+                <small>Want cloud AI captions? <a href="#" id="link-goto-settings-ai">Configure API keys in Settings →</a></small>
+              </div>
+
+              <div class="score-breakdown-card">
+                <h4>Ranking Breakdown</h4>
+                <div id="editor-scores-summary" class="scores-summary">
+                  <!-- Injected dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Center Preview Stage -->
+        <div class="preview-stage">
+          <div class="preview-canvas-wrapper">
+            <div id="editor-preview-frame" class="preview-frame aspect-9-16">
+              <video id="editor-video" playsinline preload="auto"></video>
+
+              <!-- Top Hook Banner Overlay -->
+              <div id="editor-hook-overlay" class="hook-banner-overlay hook-style-red_alert hook-pos-top">
+                <span id="editor-hook-text">WAIT FOR THE END!</span>
+              </div>
+
+              <!-- Live Styled Caption Overlay -->
+              <div id="editor-live-caption" class="live-caption-overlay style-pop">
+                <div id="editor-caption-text" class="caption-text-block"></div>
+              </div>
+
+              <button type="button" id="btn-stage-play" class="stage-play-btn" aria-label="Play/Pause Video">
+                <span class="play-icon" aria-hidden="true">▶</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="stage-controls">
+            <button type="button" id="btn-play-pause" class="btn-ctrl-play" aria-label="Play video">▶</button>
+            <span id="editor-current-time" class="time-readout">00:00</span>
+            <input type="range" id="editor-scrubber" min="0" max="100" value="0" step="0.1" class="timeline-slider" aria-label="Video scrubber">
+            <span id="editor-total-time" class="time-readout">00:00</span>
+            <button type="button" id="btn-mute-toggle" class="btn-ctrl-vol" aria-label="Mute toggle">🔊</button>
+          </div>
+        </div>
+
+        <!-- 4. Right Panel: Caption Templates Gallery -->
+        <aside class="templates-sidebar" aria-label="Caption Style Templates">
+          <div class="templates-header">
+            <h3>Caption Templates</h3>
+            <span class="subtext">10 viral styles (WYSIWYG live render)</span>
+          </div>
+
+          <div id="templates-gallery-grid" class="templates-grid" role="radiogroup" aria-label="Caption style templates"></div>
+        </aside>
+      </div>
+
+      <!-- Bottom Trim & Words Timeline -->
+      <div class="editor-bottom-timeline">
+        <div class="timeline-header-bar">
+          <div class="timeline-left">
+            <span class="timeline-title">Trim & Words Timeline</span>
+            <span id="timeline-duration-display" class="timeline-dur">Trim: 0:00 - 0:45 (45.0s)</span>
+          </div>
+          <div class="timeline-zoom">
+            <span class="mini-label">Zoom</span>
+            <input type="range" id="timeline-zoom-slider" min="1" max="4" value="1" step="0.1" aria-label="Timeline zoom">
+          </div>
+        </div>
+
+        <div class="timeline-track-container" id="timeline-track-container">
+          <div id="timeline-playhead" class="timeline-playhead"></div>
+          <div id="timeline-word-blocks" class="timeline-word-blocks"></div>
+          <div id="trim-mask-left" class="trim-mask trim-mask-left"></div>
+          <div id="trim-active-region" class="trim-active-region">
+            <div id="trim-handle-start" class="trim-handle trim-handle-start" title="Drag to adjust clip start">
+              <div class="handle-bar"></div>
+            </div>
+            <div id="trim-handle-end" class="trim-handle trim-handle-end" title="Drag to adjust clip end">
+              <div class="handle-bar"></div>
+            </div>
+          </div>
+          <div id="trim-mask-right" class="trim-mask trim-mask-right"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== STREAMERS TAB (Problem 3) ==================== -->
+    <section id="tab-streamers" class="tab-view">
+      <div class="streamers-container">
+        <!-- Left Column: Pinned Streamers List -->
+        <aside class="streamers-left-col">
+          <div class="card pin-card">
+            <h2 class="card-title">Pin a Streamer</h2>
+            <form id="pin-form">
+              <div class="form-group">
+                <label for="streamer-platform">Platform</label>
+                <select id="streamer-platform" class="settings-select">
+                  <option value="auto" selected>Auto-detect (Twitch / Kick / YouTube)</option>
+                  <option value="twitch">Twitch</option>
+                  <option value="kick">Kick</option>
+                  <option value="youtube">YouTube</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="streamer-url">Channel link, handle, or URL</label>
+                <input type="text" id="streamer-url" placeholder="e.g. caylus, ninja, kick.com/xqc, or @handle" required>
+              </div>
+              <div class="form-group">
+                <label for="streamer-name">Display Name (Optional)</label>
+                <input type="text" id="streamer-name" placeholder="Streamer Name">
+              </div>
+              <button type="submit" id="btn-pin-streamer" class="btn btn-primary">
+                <span class="btn-text">Pin streamer</span>
+              </button>
+            </form>
+          </div>
+
+          <div class="card pinned-list-card">
+            <div class="list-header">
+              <div class="list-title-row">
+                <h2 class="card-title">Pinned Streamers</h2>
+                <span id="streamers-count-badge" class="badge">0 pinned</span>
+              </div>
+              <button type="button" id="btn-check-all-streamers" class="btn-subtle btn-check-all" title="Check live status for all pinned streamers">
+                🔄 Check All Now
+              </button>
+            </div>
+            <div id="pinned-streamers-list" class="streamers-list">
+              <!-- Streamer cards injected dynamically -->
+            </div>
+          </div>
+        </aside>
+
+        <!-- Right Column: Live Streamer Panel -->
+        <section class="streamers-right-col">
+          <div id="streamer-empty-panel" class="card empty-editor-card">
+            <div class="empty-message">
+              <h3>Select a pinned streamer</h3>
+              <p>Monitor live chat -&gt; clip after stream ends. Track chat velocity in real-time, register spikes, and extract top clips once the broadcast concludes.</p>
+            </div>
+          </div>
+
+          <div id="streamer-live-panel" class="card live-monitor-card hidden">
+            <div class="streamer-header">
+              <div class="streamer-profile-row">
+                <div class="streamer-avatar-wrapper" id="live-streamer-avatar-wrap">
+                  <img id="live-streamer-avatar" class="streamer-avatar-img" src="" alt="Avatar" onerror="this.style.display='none'">
+                  <div id="live-streamer-avatar-fallback" class="streamer-avatar-fallback">S</div>
+                </div>
+                <div class="streamer-meta">
+                  <h2 id="live-streamer-name">Streamer Name</h2>
+                  <div class="streamer-badges">
+                    <span id="live-platform-badge" class="platform-badge twitch">Twitch</span>
+                    <span id="live-status-badge" class="status-badge offline">OFFLINE</span>
+                    <span id="live-viewers-badge" class="badge badge-viewers hidden">0 viewers</span>
+                    <span id="live-chat-badge" class="badge badge-chat-status">Chat: Disconnected</span>
+                  </div>
+                  <div class="signal-health-chips" id="streamer-signal-health">
+                    <span class="signal-chip" id="chip-signal-chat">Chat: Connecting</span>
+                    <span class="signal-chip" id="chip-signal-audio">Audio: Waiting</span>
+                    <span class="signal-chip" id="chip-signal-buffer">Buffer: Ready (10 min)</span>
+                    <span class="signal-chip" id="chip-last-clip">Last Clip: None</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="monitor-actions">
+                <button type="button" id="btn-check-streamer-now" class="btn btn-secondary btn-sm" title="Check live status immediately">
+                  🔄 Check Now
+                </button>
+                <button type="button" id="btn-toggle-watch" class="btn btn-primary">Start Watching</button>
+                <button type="button" id="btn-simulate-spike" class="btn btn-secondary btn-sm" title="Simulate a live chat rate spike">Test Spike</button>
+              </div>
+            </div>
+
+            <!-- Stream Status Details & Diagnostics (Problem 3) -->
+            <div class="stream-status-diagnostics" id="stream-diagnostics-box">
+              <div class="diag-item">
+                <span class="diag-label">Stream Title:</span>
+                <span id="live-stream-title" class="diag-val">Not currently broadcasting</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">Status & Diagnostics:</span>
+                <span id="live-stream-reason" class="diag-val">Channel is offline</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">Last Checked:</span>
+                <span id="live-stream-last-checked" class="diag-val">Never</span>
+              </div>
+            </div>
+
+            <div class="live-stats-bar">
+              <div class="stat-box">
+                <span class="stat-label">Elapsed Time</span>
+                <span id="stat-elapsed" class="stat-value">00:00:00</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Current Chat Rate</span>
+                <span id="stat-chat-rate" class="stat-value">0 msg/s</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Spike Threshold</span>
+                <span id="stat-threshold" class="stat-value">120 msg/s</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Spike Clips Taken</span>
+                <span id="stat-clips-count" class="stat-value">0</span>
+              </div>
+            </div>
+
+            <!-- Chat Rate Spike Graph -->
+            <div class="graph-card">
+              <div class="graph-header">
+                <h3>Chat Rate Activity & Spike Detection</h3>
+                <span class="graph-legend"><span class="legend-dot spike"></span> Spike threshold</span>
+              </div>
+              <div id="chat-graph-container" class="chat-graph-canvas">
+                <div class="graph-bars" id="graph-bars"></div>
+              </div>
+            </div>
+
+            <!-- Harvested Spike Clips -->
+            <div class="spike-clips-section">
+              <h3>Clips Harvested From This Stream</h3>
+              <div id="streamer-clips-list" class="spike-clips-grid">
+                <span class="subtext">No spike clips triggered yet.</span>
+              </div>
+            </div>
+
+            <div class="stream-end-panel">
+              <div class="stream-end-header">
+                <h3>When the stream ends</h3>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="auto-schedule-toggle">
+                  <span class="switch-slider"></span>
+                  <span class="switch-label">Auto-schedule top clips</span>
+                </label>
+              </div>
+              <p class="permission-note">
+                ⚠️ <strong>Creator Permission Required:</strong> Auto-scheduling to YouTube is off by default. Only clip and schedule content you own or have permission to republish.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ==================== SETTINGS TAB (Problems 4 & 8) ==================== -->
+    <section id="tab-settings" class="tab-view">
+      <div class="settings-container">
+        <!-- 1. AI & LLM Provider Configuration Card -->
+        <div class="card settings-card" id="settings-card-ai">
+          <div class="settings-section-header">
+            <h2>AI & LLM Configuration</h2>
+            <p>Configure your preferred LLM for viral title generation, engagement hooks, and smart hashtags. All keys are stored locally on your device in <code>.env</code>.</p>
+          </div>
+
+          <div id="ranking-mode-banner" class="ranking-mode-banner">
+            <div class="ranking-mode-left">
+              <div id="ranking-mode-title" class="ranking-mode-title">Mode: No-Key Local Mode</div>
+              <div id="ranking-mode-desc" class="ranking-mode-desc">Ranking by audio loudness peaks and speech hooks (No cloud keys required)</div>
+            </div>
+            <span id="ranking-mode-badge" class="badge">Local Only</span>
+          </div>
+
+          <form id="settings-ai-form">
+            <div class="form-group">
+              <label for="set-llm-provider" class="control-label">LLM Provider</label>
+              <select id="set-llm-provider" class="settings-select">
+                <option value="gemini">Google Gemini (Recommended - Generous Free Tier)</option>
+                <option value="openai">OpenAI (GPT-4o-mini / GPT-3.5)</option>
+                <option value="groq">Groq (Llama-3.1 - Free Ultra-Fast)</option>
+                <option value="anthropic">Anthropic (Claude 3.5 Haiku)</option>
+                <option value="ollama">Ollama (Local Offline LLM)</option>
+                <option value="local">Local Rule-Based (100% Free, Zero Keys)</option>
+              </select>
+            </div>
+
+            <!-- Gemini Key Group -->
+            <div class="form-group provider-key-group" id="group-gemini">
+              <label for="set-gemini-key">Google Gemini API Key</label>
+              <div class="input-with-test">
+                <input type="password" id="set-gemini-key" placeholder="AIzaSy... (Get free key from aistudio.google.com)">
+                <button type="button" class="btn-secondary btn-find-models" data-provider="gemini">Find Models</button>
+                <button type="button" class="btn-primary btn-save-test-key" data-provider="gemini">Save & Test</button>
+              </div>
+              <select id="models-list-gemini" class="models-dropdown hidden"></select>
+              <span id="test-status-gemini" class="key-test-status"></span>
+            </div>
+
+            <!-- OpenAI Key Group -->
+            <div class="form-group provider-key-group hidden" id="group-openai">
+              <label for="set-openai-key">OpenAI API Key</label>
+              <div class="input-with-test">
+                <input type="password" id="set-openai-key" placeholder="sk-...">
+                <button type="button" class="btn-secondary btn-test-key" data-provider="openai">Test Key</button>
+              </div>
+              <span id="test-status-openai" class="key-test-status"></span>
+            </div>
+
+            <!-- Groq Key Group -->
+            <div class="form-group provider-key-group hidden" id="group-groq">
+              <label for="set-groq-key">Groq Cloud API Key</label>
+              <div class="input-with-test">
+                <input type="password" id="set-groq-key" placeholder="gsk_...">
+                <button type="button" class="btn-secondary btn-test-key" data-provider="groq">Test Key</button>
+              </div>
+              <span id="test-status-groq" class="key-test-status"></span>
+            </div>
+
+            <!-- Anthropic Key Group -->
+            <div class="form-group provider-key-group hidden" id="group-anthropic">
+              <label for="set-anthropic-key">Anthropic Claude API Key</label>
+              <div class="input-with-test">
+                <input type="password" id="set-anthropic-key" placeholder="sk-ant-...">
+                <button type="button" class="btn-secondary btn-test-key" data-provider="anthropic">Test Key</button>
+              </div>
+              <span id="test-status-anthropic" class="key-test-status"></span>
+            </div>
+
+            <!-- Ollama Endpoint Group -->
+            <div class="form-group provider-key-group hidden" id="group-ollama">
+              <label for="set-ollama-url">Ollama Local LLM Endpoint</label>
+              <div class="input-with-test">
+                <input type="text" id="set-ollama-url" placeholder="http://127.0.0.1:11434">
+                <button type="button" class="btn-secondary btn-test-key" data-provider="ollama">Test Connection</button>
+              </div>
+              <span id="test-status-ollama" class="key-test-status"></span>
+            </div>
+
+            <div class="settings-divider"></div>
+
+            <!-- Data Folder Storage Settings (Part 3.3) -->
+            <div class="settings-section-header">
+              <h2>Data Directory & Disk Safety</h2>
+              <p>Storage location for downloaded media, rolling live buffers, and finished clips.</p>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="set-data-dir">Data Folder Path</label>
+                <input type="text" id="set-data-dir" placeholder="data">
+              </div>
+              <div class="form-group" style="min-width: 170px;">
+                <label>Free Disk Space</label>
+                <div id="free-space-badge" class="badge badge-accent" style="margin-top: 8px; display: inline-block;">Checking...</div>
+              </div>
+            </div>
+
+            <div class="settings-divider"></div>
+
+            <!-- Transcription Configuration (Problem 4) -->
+            <div class="settings-section-header">
+              <h2>Audio Transcription Engine</h2>
+              <p>Choose between offline on-device transcription with faster-whisper or cloud Whisper API.</p>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="set-transcription-option">Transcription Engine</label>
+                <select id="set-transcription-option" class="settings-select">
+                  <option value="local_whisper">Local faster-whisper (Offline & Free)</option>
+                  <option value="openai_whisper">OpenAI Whisper API (Cloud)</option>
+                </select>
+              </div>
+              <div class="form-group flex-1" id="group-whisper-model">
+                <label for="set-whisper-model">Model Size</label>
+                <select id="set-whisper-model" class="settings-select">
+                  <option value="tiny">Tiny (Fastest, ~40MB VRAM)</option>
+                  <option value="base" selected>Base (Recommended, ~140MB VRAM)</option>
+                  <option value="small">Small (High Accuracy, ~460MB VRAM)</option>
+                  <option value="medium">Medium (Pro Grade, ~1.5GB VRAM)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="btn-save-ai-settings" class="btn-primary">Save AI & Key Settings</button>
+              <span id="ai-settings-save-status" class="status-msg hidden">Saved to .env!</span>
+            </div>
+          </form>
+        </div>
+
+        <!-- 2. Guided YouTube Connection Wizard Card (Problem 8) -->
+        <div class="card settings-card" id="settings-card-youtube">
+          <div class="settings-section-header">
+            <h2>YouTube OAuth Connection (Guided Wizard)</h2>
+            <p>Connect your YouTube account to publish shorts directly without opening terminal scripts.</p>
+          </div>
+
+          <!-- Current Connection Status Banner -->
+          <div class="yt-connection-banner">
+            <div class="yt-status-left">
+              <span class="status-dot-lg" id="yt-status-dot"></span>
+              <div>
+                <strong id="yt-status-title">Not Connected</strong>
+                <p id="yt-channel-readout" class="subtext">Follow the 5 steps below to connect your channel</p>
+              </div>
+            </div>
+            <button type="button" id="btn-disconnect-yt" class="btn-subtle hidden">Disconnect</button>
+          </div>
+
+          <!-- Wizard Steps (Problem 8) -->
+          <div class="yt-wizard-steps">
+            <!-- Step 1 -->
+            <div class="wizard-step">
+              <div class="step-badge">1</div>
+              <div class="step-content">
+                <strong>Create a Google Cloud Project</strong>
+                <p>Open the Google Cloud Console and create a new project (e.g. named <em>Clipping Final Boss</em>).</p>
+                <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener noreferrer" class="wizard-link-btn">
+                  Open Google Cloud Console ↗
+                </a>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="wizard-step">
+              <div class="step-badge">2</div>
+              <div class="step-content">
+                <strong>Enable YouTube Data API v3</strong>
+                <p>In your new project, search for <em>YouTube Data API v3</em> and click the blue <strong>ENABLE</strong> button.</p>
+                <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener noreferrer" class="wizard-link-btn">
+                  Enable YouTube Data API v3 ↗
+                </a>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="wizard-step">
+              <div class="step-badge">3</div>
+              <div class="step-content">
+                <strong>Configure OAuth Consent Screen & Test Users</strong>
+                <p>Select User Type: <strong>External</strong>. Fill App name and email. In the <em>Test Users</em> tab, add your personal Google account email address.</p>
+                <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener noreferrer" class="wizard-link-btn">
+                  Configure OAuth Consent Screen ↗
+                </a>
+              </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="wizard-step">
+              <div class="step-badge">4</div>
+              <div class="step-content">
+                <strong>Create OAuth Client ID Credentials</strong>
+                <p>Go to Credentials → Create Credentials → <em>OAuth client ID</em>. Choose Application Type: <strong>Desktop app</strong>. Copy your Client ID and Client Secret below:</p>
+                <a href="https://console.cloud.google.com/apis/credentials/oauthclient" target="_blank" rel="noopener noreferrer" class="wizard-link-btn" style="margin-bottom:12px;">
+                  Create OAuth Client ID ↗
+                </a>
+
+                <div class="form-group" style="margin-top:10px;">
+                  <label for="yt-client-id-input">OAuth Client ID</label>
+                  <input type="text" id="yt-client-id-input" placeholder="e.g. 123456789-abcdef.apps.googleusercontent.com">
+                </div>
+                <div class="form-group">
+                  <label for="yt-client-secret-input">OAuth Client Secret</label>
+                  <input type="password" id="yt-client-secret-input" placeholder="e.g. GOCSPX-xxxxxxxxxxxx">
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="wizard-step">
+              <div class="step-badge">5</div>
+              <div class="step-content">
+                <strong>Connect YouTube Account</strong>
+                <p>Click the button below to approve YouTube upload permissions in your browser. You will see <em>Connected as &lt;channel&gt;</em> once completed.</p>
+                <button type="button" id="btn-start-yt-connect" class="btn-primary" style="margin-top:8px;">
+                  ▶ Connect YouTube
+                </button>
+                <span id="yt-connect-msg" class="key-test-status" style="margin-left:12px;"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- YouTube Quota & Permission Notice (Problem 8) -->
+          <div class="yt-notice-card">
+            <h4>⚠️ Important Notes on YouTube API Quota & Permissions</h4>
+            <ul>
+              <li><strong>Private Uploads:</strong> Unaudited personal Google Cloud projects upload videos as <em>Private</em> by default.</li>
+              <li><strong>Daily Quota:</strong> YouTube free quota allows approximately 6 video uploads per day (1,600 quota units per upload out of 10,000 daily points).</li>
+              <li><strong>Creator Permission:</strong> Only post content you have created or have explicit legal permission to clip and publish.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 3. Stream Recording & Buffer Parameters Card -->
+        <div class="card settings-card">
+          <div class="settings-section-header">
+            <h2>Live Recording & Buffer Parameters</h2>
+          </div>
+
+          <form id="settings-buffer-form">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="set-record-height">Stream Recording Height (px)</label>
+                <select id="set-record-height">
+                  <option value="720">720p (Recommended)</option>
+                  <option value="1080">1080p (Full HD)</option>
+                  <option value="480">480p (Lightweight)</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="set-spike-threshold">Spike Trigger Rate (msgs / min)</label>
+                <input type="number" id="set-spike-threshold" min="30" max="500" value="120">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="set-daily-cap">Daily Upload Cap</label>
+              <input type="number" id="set-daily-cap" min="1" max="10" value="5">
+              <span class="field-hint">Max scheduled clips allowed per day to preserve your API quota limit.</span>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="btn-save-buffer-settings" class="btn-primary">Save Buffer Parameters</button>
+              <span id="buffer-settings-save-status" class="status-msg hidden">Saved!</span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- YouTube Schedule Modal Dialog -->
+  <div id="schedule-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Schedule to YouTube">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="schedule-modal-title">Schedule Clip to YouTube Shorts</h3>
+        <button type="button" id="btn-close-modal" class="btn-close" aria-label="Close dialog">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="sched-title">Video Title</label>
+          <input type="text" id="sched-title" required>
+        </div>
+
+        <div class="form-group">
+          <label for="sched-desc">Description</label>
+          <textarea id="sched-desc" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="sched-datetime">Publish Time (Leave blank for immediate upload)</label>
+          <input type="datetime-local" id="sched-datetime">
+        </div>
+
+        <div class="modal-notice">
+          <p>⚠️ <strong>Permissions & Quota:</strong> YouTube uploads consume 1,600 units of your daily 10,000 unit quota. Videos uploaded via unaudited test projects are set to Private automatically.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="btn-modal-cancel" class="btn-subtle">Cancel</button>
+        <button type="button" id="btn-modal-confirm" class="btn-primary">Confirm & Schedule</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Progress & Success Modal -->
+  <div id="export-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Rendering Export">
+    <div class="modal-card export-modal-card">
+      <div class="modal-header">
+        <h3>Rendering Clip with FFmpeg</h3>
+        <button type="button" id="btn-close-export-modal" class="btn-close">✕</button>
+      </div>
+      <div class="modal-body export-modal-body">
+        <div id="export-progress-spinner" class="export-spinner-box">
+          <div class="spinner"></div>
+          <p id="export-status-label">Burning kinetic animated subtitles with FFmpeg...</p>
+        </div>
+        <div id="export-success-content" class="export-success-box hidden">
+          <div class="success-icon">✓</div>
+          <h4>Render Complete!</h4>
+          <p>Your video has been rendered and burned with pixel-perfect captions.</p>
+          <div class="export-video-preview">
+            <video id="export-result-video" controls playsinline style="max-height: 320px; border-radius: 8px;"></video>
+          </div>
+          <div class="export-action-btns">
+            <a id="export-download-link" class="btn-primary" download>⬇️ Download MP4</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container (Problem 4 & Error Handling) -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- System Health & Windows Safety Modal (Part 3.1) -->
+  <div id="system-health-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="System Health">
+    <div class="modal-card" style="max-width: 640px;">
+      <div class="modal-header">
+        <h3>System Health & Environment Diagnostics</h3>
+        <button type="button" id="btn-close-health-modal" class="btn-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="subtext">Overview of local dependencies, disk space, and Windows file path safety.</p>
+
+        <div id="health-path-warning-box" class="path-warning-card hidden">
+          <strong id="health-warning-title">⚠️ Windows Path Length Notice</strong>
+          <p id="health-warning-text" style="margin-top: 4px;"></p>
+        </div>
+
+        <div class="health-grid-box">
+          <div class="health-stat-card">
+            <div class="health-stat-title">FFmpeg</div>
+            <div class="health-stat-val" id="health-ffmpeg-val">Checking...</div>
+          </div>
+          <div class="health-stat-card">
+            <div class="health-stat-title">FFprobe</div>
+            <div class="health-stat-val" id="health-ffprobe-val">Checking...</div>
+          </div>
+          <div class="health-stat-card">
+            <div class="health-stat-title">yt-dlp</div>
+            <div class="health-stat-val" id="health-ytdlp-val">Checking...</div>
+          </div>
+          <div class="health-stat-card">
+            <div class="health-stat-title">Python</div>
+            <div class="health-stat-val" id="health-python-val">Checking...</div>
+          </div>
+          <div class="health-stat-card">
+            <div class="health-stat-title">Data Storage Free</div>
+            <div class="health-stat-val" id="health-disk-val">Checking...</div>
+          </div>
+          <div class="health-stat-card">
+            <div class="health-stat-title">Project Path Length</div>
+            <div class="health-stat-val" id="health-pathlen-val">Checking...</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label>Project Root Path</label>
+          <input type="text" id="health-project-path-input" readonly class="style-input" style="background: rgba(255,255,255,0.03); font-family: monospace; font-size: 11px;">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-modal-close-health" class="btn-primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Server Unreachable Modal Overlay (Problem 4) -->
+  <div id="server-unreachable-overlay" class="server-error-overlay hidden" role="alertdialog">
+    <div class="server-error-modal">
+      <div class="server-error-icon">🔌</div>
+      <h3>Server not responding</h3>
+      <p>Could not connect to Clipping Final Boss backend at <code>http://127.0.0.1:8000</code>. Is the server running?</p>
+      <div class="server-error-actions">
+        <button type="button" id="btn-retry-server" class="btn btn-primary">🔄 Retry Connection</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/blackhole.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
