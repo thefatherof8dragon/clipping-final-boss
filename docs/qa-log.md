@@ -162,3 +162,28 @@ tests/test_stage7_youtube.py::test_auth_status_check PASSED              [100%]
 - **Server Log Review**:
   - Zero fatal server errors.
   - Startup health logged cleanly: `[Startup Health] Status: OK (Healthy: True)`.
+
+### Step 5: Background Jobs Disk Persistence and Recovery
+- **Storage**: `data/jobs.json` with atomic `.tmp` replace writing.
+- **Fields Persisted**: `id`, `type`, `status` (`pending`/`running`/`completed`/`failed`), `stage`, `progress`, `message`, `error`, `result`, `created_at`, `updated_at`, `completed_at`, `metadata`.
+- **Interruption Reconciliation**: On restart, any in-flight job with status `running` or `pending` (and not `complete`) is reconciled and marked failed with error: `"interrupted by restart"`.
+- **Test File**: `tests/test_jobs_persistence.py` (1 passed in 0.13s).
+- **Restart Demonstration Output**:
+```
+--- 1. Server Process A Starts ---
+Created Job: ID=job_5e072a8a364f, Status=pending, Stage=queued
+Job Running: ID=job_5e072a8a364f, Status=running, Stage=downloading, Progress=25%
+
+--- 2. Server Crash / Termination Mid-Job ---
+Process A terminated abruptly.
+
+--- 3. Server Process B Restarts and Loads Disk State ---
+[Job job_5e072a8a364f] Failed: interrupted by restart
+[Jobs Recovery] Reconciled 1 in-flight job(s) as 'interrupted by restart'
+Recovered Job: ID=job_5e072a8a364f
+Status:        failed
+Stage:         downloading
+Error:         interrupted by restart
+Message:       Failed: interrupted by restart
+Progress:      25%
+```
