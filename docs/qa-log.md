@@ -198,3 +198,15 @@ Progress:      25%
 - **Evaluation**: Project full path is `Z:\Clipping open source\clipper-kit\clipper-kit` (length: 47 characters).
 - **Condition Check**: `path_len <= 100` and path is on external workspace drive Z: (not in nested AppData/IDE temp folder).
 - **Status**: **SKIPPED** per specification ("only if Step 0 flagged a long or IDE-workspace path").
+
+
+## Stage B run 1 (2026-11-20)
+
+### Step 1: Real Path Check
+- **Commands Executed**:
+  - `subst`: No virtual drive subst mappings found.
+  - `net use`: No network connections mapped (`There are no entries in the list`).
+  - `Win32_LogicalDisk (DeviceID='Z:')`: `DriveType = 3` (`DRIVE_FIXED`, local physical NTFS partition), 167 GB free.
+- **Resolved Real Path**: `Z:\Clipping open source\clipper-kit\clipper-kit`
+- **True Path Length**: 47 characters (well under 100-character threshold).
+- **Move to `C:\clipper`**: Not required per criteria (`path_len <= 100`).
