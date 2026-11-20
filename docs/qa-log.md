@@ -72,3 +72,71 @@ content-type: application/json
 {"status":"ok","healthy":true,"app_version":"1.0.0","python_version":"3.14.4","ffmpeg":{"found":true,"version":"9.0.2-full_build-www.gyan.dev","path":"C:\\Users\\Durvankur\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.2-full_build\\bin\\ffmpeg.EXE"},"ffprobe":{"found":true,"version":"9.0.2-full_build-www.gyan.dev","path":"C:\\Users\\Durvankur\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.2-full_build\\bin\\ffprobe.EXE"},"yt_dlp_version":"2026.10.26","js_runtime":{"found":true,"runtime":"node","version":"v24.15.0","path":"C:\\Program Files\\nodejs\\node.EXE"},"data_folder":{"path":"Z:\\Clipping open source\\clipper-kit\\clipper-kit\\data","writable":true,"free_space_gb":156.42,"total_space_gb":270.39},"project_path":{"path":"Z:\\Clipping open source\\clipper-kit\\clipper-kit","length":47,"warning":""},"time":"2026-11-20T03:46:34.273158+00:00","failing":[]}
 ```
 - **Test File**: `tests/test_healthz.py` (2 passed in 6.99s)
+
+### Step 3: tests/run.py Single Entry Point
+- **Script**: `tests/run.py`
+- **Execution Command**: `.\.venv\Scripts\python.exe tests/run.py`
+- **Full Output**:
+```
+============================================================
+  🧪 Running Clipping Final Boss Test Suite
+  👉 Python: Z:\Clipping open source\clipper-kit\clipper-kit\.venv\Scripts\python.exe
+  👉 Root:   Z:\Clipping open source\clipper-kit\clipper-kit
+============================================================
+
+============================= test session starts =============================
+platform win32 -- Python 3.14.4, pytest-9.2.0, pluggy-1.7.0 -- Z:\Clipping open source\clipper-kit\clipper-kit\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: Z:\Clipping open source\clipper-kit\clipper-kit
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.16.0
+collected 39 items
+
+tests/test_healthz.py::test_healthz_function_returns_200_and_expected_fields PASSED [  2%]
+tests/test_healthz.py::test_healthz_returns_503_on_failing_dependency PASSED [  5%]
+tests/test_priority1_and_templates.py::test_caption_templates_all_ten PASSED [  7%]
+tests/test_priority1_and_templates.py::test_unique_titles_across_session PASSED [ 10%]
+tests/test_priority1_and_templates.py::test_score_differentiation PASSED [ 12%]
+tests/test_progress_callback.py::test_on_progress_signature_and_stages PASSED [ 15%]
+tests/test_progress_callback.py::test_on_progress_default_and_legacy_arguments PASSED [ 17%]
+tests/test_progress_callback.py::test_failed_job_preserves_stage_and_never_shows_ready PASSED [ 20%]
+tests/test_stage1_pipeline.py::test_local_file_download_and_probe PASSED [ 23%]
+tests/test_stage1_pipeline.py::test_transcription_runs PASSED            [ 25%]
+tests/test_stage1_pipeline.py::test_candidate_picker PASSED              [ 28%]
+tests/test_stage1_pipeline.py::test_cutter_creates_mp4 PASSED            [ 30%]
+tests/test_stage1_pipeline.py::test_stage1_pipeline_generates_at_least_3_clips PASSED [ 33%]
+tests/test_stage2_ranking.py::test_ranking_math_with_chat PASSED         [ 35%]
+tests/test_stage2_ranking.py::test_ranking_math_without_chat_redistributed PASSED [ 38%]
+tests/test_stage2_ranking.py::test_rank_ordering_and_renaming PASSED     [ 41%]
+tests/test_stage2_ranking.py::test_api_get_session_clips PASSED          [ 43%]
+tests/test_stage3_renderer.py::test_render_all_aspect_ratios_blur_fit[9:16] PASSED [ 46%]
+tests/test_stage3_renderer.py::test_render_all_aspect_ratios_blur_fit[1:1] PASSED [ 48%]
+tests/test_stage3_renderer.py::test_render_all_aspect_ratios_blur_fit[4:5] PASSED [ 51%]
+tests/test_stage3_renderer.py::test_render_all_aspect_ratios_blur_fit[16:9] PASSED [ 53%]
+tests/test_stage3_renderer.py::test_render_both_framing_modes[blur_fit] PASSED [ 56%]
+tests/test_stage3_renderer.py::test_render_both_framing_modes[crop_to_face] PASSED [ 58%]
+tests/test_stage3_renderer.py::test_render_clean_minimal_subtitles_off PASSED [ 61%]
+tests/test_stage4_ai_thumbnail.py::test_no_key_metadata_generation PASSED [ 64%]
+tests/test_stage4_ai_thumbnail.py::test_generate_clip_metadata_dispatcher PASSED [ 66%]
+tests/test_stage4_ai_thumbnail.py::test_best_frame_extraction PASSED     [ 69%]
+tests/test_stage4_ai_thumbnail.py::test_thumbnail_creation PASSED        [ 71%]
+tests/test_stage5_api.py::test_static_ui_served PASSED                   [ 74%]
+tests/test_stage5_api.py::test_static_css_contains_spec_theme PASSED     [ 76%]
+tests/test_stage5_api.py::test_settings_api_get_and_put PASSED           [ 79%]
+tests/test_stage5_api.py::test_clip_patch_and_regenerate PASSED          [ 82%]
+tests/test_stage6_streamers.py::test_platform_detection PASSED           [ 84%]
+tests/test_stage6_streamers.py::test_resolve_handle_and_platform PASSED  [ 87%]
+tests/test_stage6_streamers.py::test_pin_and_manage_streamers PASSED     [ 89%]
+tests/test_stage6_streamers.py::test_simulated_stream_spike_clipping PASSED [ 92%]
+tests/test_stage7_youtube.py::test_dry_run_upload PASSED                 [ 94%]
+tests/test_stage7_youtube.py::test_daily_upload_cap_enforcement PASSED   [ 97%]
+tests/test_stage7_youtube.py::test_auth_status_check PASSED              [100%]
+
+======================= 39 passed in 124.97s (0:02:04) ========================
+
+============================================================
+  ✅ TEST SUITE RESULT: ALL TESTS PASSED (EXIT CODE 0)
+============================================================
+```
+- **Exit Code**: 0 (Clean pass, 0 failures, 0 skipped)
