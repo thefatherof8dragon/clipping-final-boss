@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import httpx
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Request, Response
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Request, Response, status
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -338,11 +338,41 @@ def startup_cleanup_stale_demo_data() -> None:
             except Exception as e:
                 logger.warning(f"Could not remove stale session {s_dir.name}: {e}")
 
-# Run startup cleanup immediately
+# Run startup cleanup and diagnostics immediately
 try:
     startup_cleanup_stale_demo_data()
 except Exception as _e:
     logger.warning(f"Startup demo cleanup notice: {_e}")
+
+try:
+    from .health import get_system_health
+    _h = get_system_health()
+    logger.info(f"[Startup Health] Status: {_h['status'].upper()} (Healthy: {_h['healthy']}) | Version: {_h['app_version']} | Python: {_h['python_version']}")
+    if _h['ffmpeg']['found']:
+        logger.info(f"[Startup Health] FFmpeg: {_h['ffmpeg']['version']} at {_h['ffmpeg']['path']}")
+    else:
+        logger.warning("[Startup Health] FFmpeg: NOT FOUND!")
+    if _h['ffprobe']['found']:
+        logger.info(f"[Startup Health] FFprobe: {_h['ffprobe']['version']} at {_h['ffprobe']['path']}")
+    else:
+        logger.warning("[Startup Health] FFprobe: NOT FOUND!")
+    logger.info(f"[Startup Health] yt-dlp: {_h['yt_dlp_version']}")
+    _js = _h['js_runtime']
+    if _js['found']:
+        logger.info(f"[Startup Health] JS Runtime: {_js['runtime']} ({_js['version']}) at {_js['path']}")
+    else:
+        logger.warning("[Startup Health] JS Runtime: Neither Deno nor Node.js found in PATH.")
+    _df = _h['data_folder']
+    if _df['writable']:
+        logger.info(f"[Startup Health] Data Folder: Writable ({_df['free_space_gb']} GB free of {_df['total_space_gb']} GB) at {_df['path']}")
+    else:
+        logger.warning(f"[Startup Health] Data Folder: NOT WRITABLE at {_df['path']}")
+    if _h['project_path']['warning']:
+        logger.warning(f"[Startup Health] {_h['project_path']['warning']}")
+    if _h['failing']:
+        logger.warning(f"[Startup Health] Failing checks: {', '.join(_h['failing'])}")
+except Exception as _he:
+    logger.warning(f"[Startup Health] Diagnostic exception: {_he}")
 
 @app.get("/api/sessions")
 def api_list_sessions():
@@ -815,11 +845,17 @@ def api_find_models(provider: Optional[str] = None, key: Optional[str] = None):
 
     return {"provider": prov, "models": []}
 
+@app.get("/healthz")
 @app.get("/api/health")
-def api_health():
-    """Startup health check and environment diagnostics."""
+def api_health(response: Response):
+    """Health check returning 200 on healthy or 503 if required dependencies fail."""
     from .health import get_system_health
-    return get_system_health()
+    data = get_system_health()
+    if not data.get("healthy", False):
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    else:
+        response.status_code = status.HTTP_200_OK
+    return data
 
 @app.get("/api/models/whisper/status")
 def api_whisper_status():

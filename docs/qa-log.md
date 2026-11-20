@@ -41,3 +41,34 @@ This file records exact command outputs, ffprobe results, and evidence for every
   - Integrated automatic Node JS challenge runtime detection (`js_runtimes = {'node': {}}`).
   - Added configurable settings: `YTDLP_COOKIE_BROWSER`, `YTDLP_SLEEP_INTERVAL`, `YTDLP_PLAYER_CLIENT`, `YTDLP_JS_RUNTIME`.
   - Added real yt-dlp error text logging and plain-language rate-limiting / unavailable hints.
+
+### Step 2: /healthz and Startup Health Checks
+- **Endpoint**: `GET /healthz` and `GET /api/health`
+- **Specification Met**:
+  - `status`: 'ok' / 'degraded' / 'failing'
+  - `app_version`: "1.0.0"
+  - `python_version`: "3.14.4"
+  - `ffmpeg`: Found (version 9.0.2-full_build-www.gyan.dev)
+  - `ffprobe`: Found (version 9.0.2-full_build-www.gyan.dev)
+  - `yt_dlp_version`: "2026.10.26"
+  - `js_runtime`: Node.js (v24.15.0)
+  - `data_folder`: Writable (real file write and readback test), free space > 150 GB
+  - `project_path`: Path length 47 chars (safe, < 100)
+  - `time`: ISO 8601 UTC
+  - HTTP 200 on all required pass; HTTP 503 with `failing` list otherwise
+- **Startup Diagnostics**:
+  - Implemented startup logging at server launch in `clipper/api.py`, reporting dependencies, versions, and paths at INFO or WARNING.
+- **Real Curl Command & Output**:
+```bash
+curl -i http://127.0.0.1:8000/healthz
+```
+```http
+HTTP/1.1 200 OK
+date: Fri, 20 Nov 2026 03:46:31 GMT
+server: uvicorn
+content-length: 991
+content-type: application/json
+
+{"status":"ok","healthy":true,"app_version":"1.0.0","python_version":"3.14.4","ffmpeg":{"found":true,"version":"9.0.2-full_build-www.gyan.dev","path":"C:\\Users\\Durvankur\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.2-full_build\\bin\\ffmpeg.EXE"},"ffprobe":{"found":true,"version":"9.0.2-full_build-www.gyan.dev","path":"C:\\Users\\Durvankur\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.2-full_build\\bin\\ffprobe.EXE"},"yt_dlp_version":"2026.10.26","js_runtime":{"found":true,"runtime":"node","version":"v24.15.0","path":"C:\\Program Files\\nodejs\\node.EXE"},"data_folder":{"path":"Z:\\Clipping open source\\clipper-kit\\clipper-kit\\data","writable":true,"free_space_gb":156.42,"total_space_gb":270.39},"project_path":{"path":"Z:\\Clipping open source\\clipper-kit\\clipper-kit","length":47,"warning":""},"time":"2026-11-20T03:46:34.273158+00:00","failing":[]}
+```
+- **Test File**: `tests/test_healthz.py` (2 passed in 6.99s)

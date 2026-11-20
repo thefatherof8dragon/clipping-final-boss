@@ -1,16 +1,19 @@
 """
 System health and environment safety checks for Clipping Final Boss.
-Validates dependencies (FFmpeg, ffprobe, yt-dlp, Python), disk space,
-write permissions, and Windows 260-character path limit warnings.
+Validates dependencies (FFmpeg, ffprobe, yt-dlp, Python, JS runtime), disk space,
+write permissions, and Windows path limit warnings.
 """
 
 import os
 import shutil
 import subprocess
 import sys
+import time
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 
+from . import __version__
 from .config import ROOT_DIR, DATA_DIR, find_ffmpeg, find_ffprobe
 
 try:
@@ -20,18 +23,40 @@ except Exception:
     YTDLP_VERSION = None
 
 
+def check_js_runtime() -> Dict[str, Any]:
+    """Check for Deno or Node.js runtime presence and version."""
+    for bin_name in ["deno", "node"]:
+        p = shutil.which(bin_name)
+        if p:
+            try:
+                res = subprocess.run([p, "--version"], capture_output=True, text=True, timeout=2.0)
+                if res.returncode == 0:
+                    ver = res.stdout.strip().splitlines()[0]
+                    return {"found": True, "runtime": bin_name, "version": ver, "path": p}
+            except Exception:
+                return {"found": True, "runtime": bin_name, "version": "available", "path": p}
+    return {"found": False, "runtime": None, "version": None, "path": None}
+
+
 def get_system_health() -> Dict[str, Any]:
     """
-    Performs full environment diagnostic:
-    1. FFmpeg & ffprobe presence and versions
-    2. yt-dlp presence and version
-    3. Python version
-    4. Data directory write access & disk capacity
-    5. Project path length & Windows MAX_PATH (260 char) safety check
+    Performs full environment diagnostic matching /healthz specification:
+    - status ('ok' or 'degraded')
+    - app version
+    - python version
+    - ffmpeg + ffprobe found and version
+    - yt-dlp version
+    - JS runtime found
+    - free disk space in the data folder
+    - data folder writable (real write test)
+    - project path length (warn if over 100)
+    - time (ISO 8601 UTC)
+    - failing list (for 503 status code decision)
     """
-    ffmpeg_bin = find_ffmpeg()
-    ffprobe_bin = find_ffprobe()
+    failing: List[str] = []
 
+    # 1. FFmpeg
+    ffmpeg_bin = find_ffmpeg()
     ffmpeg_ok = False
     ffmpeg_ver = ""
     if shutil.which(ffmpeg_bin) or (os.path.isabs(ffmpeg_bin) and os.path.exists(ffmpeg_bin)):
@@ -44,7 +69,11 @@ def get_system_health() -> Dict[str, Any]:
         except Exception:
             ffmpeg_ok = True
             ffmpeg_ver = "available"
+    if not ffmpeg_ok:
+        failing.append("ffmpeg missing or unexecutable")
 
+    # 2. FFprobe
+    ffprobe_bin = find_ffprobe()
     ffprobe_ok = False
     ffprobe_ver = ""
     if shutil.which(ffprobe_bin) or (os.path.isabs(ffprobe_bin) and os.path.exists(ffprobe_bin)):
@@ -57,18 +86,31 @@ def get_system_health() -> Dict[str, Any]:
         except Exception:
             ffprobe_ok = True
             ffprobe_ver = "available"
+    if not ffprobe_ok:
+        failing.append("ffprobe missing or unexecutable")
 
-    # Disk usage and write access
+    # 3. yt-dlp
+    if not YTDLP_VERSION:
+        failing.append("yt-dlp missing or unimportable")
+
+    # 4. JS Runtime (Node or Deno)
+    js_info = check_js_runtime()
+    if not js_info["found"]:
+        failing.append("JS runtime (Deno or Node) not found in PATH")
+
+    # 5. Data directory write access & disk capacity
     data_dir_path = DATA_DIR.resolve()
     writable = False
     try:
         data_dir_path.mkdir(parents=True, exist_ok=True)
-        test_file = data_dir_path / ".health_test"
+        test_file = data_dir_path / f".health_test_{int(time.time()*1000)}"
         test_file.write_text("ok", encoding="utf-8")
-        writable = test_file.exists()
+        writable = test_file.exists() and test_file.read_text(encoding="utf-8") == "ok"
         test_file.unlink(missing_ok=True)
     except Exception:
         writable = False
+    if not writable:
+        failing.append(f"data folder is not writable: {data_dir_path}")
 
     free_gb = 0.0
     total_gb = 0.0
@@ -79,58 +121,53 @@ def get_system_health() -> Dict[str, Any]:
     except Exception:
         pass
 
-    # Windows MAX_PATH (260 char) & Workspace Path Safety
+    # 6. Project path length & warning (warn if > 100 characters)
     project_path_str = str(ROOT_DIR.resolve())
     path_len = len(project_path_str)
     path_warning = ""
-
     is_windows = sys.platform.startswith("win")
     is_temp_or_nested = any(
         sub in project_path_str.lower()
         for sub in ("\\temp", "/temp", "\\tmp", "/tmp", "appdata", ".gemini", "antigravity", "\\brain\\")
     )
-
-    if is_windows and (path_len > 150 or is_temp_or_nested):
+    if path_len > 100 or is_temp_or_nested:
         path_warning = (
-            f"Path Warning: The project root path is long ({path_len} characters) or in a temporary workspace directory. "
-            f"Windows limits file paths to 260 characters, which may cause faster-whisper CTranslate2 libraries or FFmpeg "
-            f"subtitle renderers to fail with 'The filename or extension is too long'. "
-            f"We strongly recommend moving or cloning the project to a short, permanent folder such as C:\\clipper."
+            f"Path Warning: The project root path length is {path_len} characters "
+            f"(warning threshold: 100). Windows MAX_PATH is 260 characters. "
+            f"Consider moving project to a short root directory such as C:\\clipper."
         )
 
-    all_good = bool(ffmpeg_ok and ffprobe_ok and (YTDLP_VERSION is not None) and writable)
-    overall_status = "healthy" if (all_good and not path_warning) else ("warning" if all_good else "critical")
+    all_required_pass = len(failing) == 0
+    status_str = "ok" if (all_required_pass and not path_warning) else ("degraded" if all_required_pass else "failing")
 
     return {
-        "status": overall_status,
+        "status": status_str,
+        "healthy": all_required_pass,
+        "app_version": __version__,
+        "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         "ffmpeg": {
-            "present": ffmpeg_ok,
+            "found": ffmpeg_ok,
             "version": ffmpeg_ver or "not found",
             "path": ffmpeg_bin,
         },
         "ffprobe": {
-            "present": ffprobe_ok,
+            "found": ffprobe_ok,
             "version": ffprobe_ver or "not found",
             "path": ffprobe_bin,
         },
-        "yt_dlp": {
-            "present": YTDLP_VERSION is not None,
-            "version": YTDLP_VERSION or "not installed",
-        },
-        "python": {
-            "version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-            "executable": sys.executable,
-        },
-        "data_dir": {
+        "yt_dlp_version": YTDLP_VERSION or "not installed",
+        "js_runtime": js_info,
+        "data_folder": {
             "path": str(data_dir_path),
             "writable": writable,
             "free_space_gb": free_gb,
             "total_space_gb": total_gb,
         },
-        "path_safety": {
-            "project_path": project_path_str,
-            "path_length": path_len,
-            "is_temp_or_nested": is_temp_or_nested,
+        "project_path": {
+            "path": project_path_str,
+            "length": path_len,
             "warning": path_warning,
         },
+        "time": datetime.now(timezone.utc).isoformat(),
+        "failing": failing,
     }
