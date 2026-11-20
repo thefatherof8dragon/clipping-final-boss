@@ -22,6 +22,54 @@ try:
 except Exception:
     YTDLP_VERSION = None
 
+# In-memory cache for static binary version checks to guarantee sub-millisecond response
+_CACHED_HEALTH_BINARIES: Dict[str, Any] = {}
+_LAST_BINARY_CHECK_TS: float = 0.0
+
+def _get_cached_binaries() -> Dict[str, Any]:
+    global _CACHED_HEALTH_BINARIES, _LAST_BINARY_CHECK_TS
+    now = time.time()
+    if _CACHED_HEALTH_BINARIES and (now - _LAST_BINARY_CHECK_TS < 180.0):
+        return _CACHED_HEALTH_BINARIES
+
+    ffmpeg_bin = find_ffmpeg()
+    ffmpeg_ok = False
+    ffmpeg_ver = ""
+    if shutil.which(ffmpeg_bin) or (os.path.isabs(ffmpeg_bin) and os.path.exists(ffmpeg_bin)):
+        try:
+            res = subprocess.run([ffmpeg_bin, "-version"], capture_output=True, text=True, timeout=2.0)
+            if res.returncode == 0:
+                ffmpeg_ok = True
+                first_line = res.stdout.splitlines()[0] if res.stdout else ""
+                ffmpeg_ver = first_line.replace("ffmpeg version", "").strip().split(" ")[0]
+        except Exception:
+            ffmpeg_ok = True
+            ffmpeg_ver = "available"
+
+    ffprobe_bin = find_ffprobe()
+    ffprobe_ok = False
+    ffprobe_ver = ""
+    if shutil.which(ffprobe_bin) or (os.path.isabs(ffprobe_bin) and os.path.exists(ffprobe_bin)):
+        try:
+            res = subprocess.run([ffprobe_bin, "-version"], capture_output=True, text=True, timeout=2.0)
+            if res.returncode == 0:
+                ffprobe_ok = True
+                first_line = res.stdout.splitlines()[0] if res.stdout else ""
+                ffprobe_ver = first_line.replace("ffprobe version", "").strip().split(" ")[0]
+        except Exception:
+            ffprobe_ok = True
+            ffprobe_ver = "available"
+
+    js_info = check_js_runtime()
+
+    _CACHED_HEALTH_BINARIES = {
+        "ffmpeg": {"bin": ffmpeg_bin, "ok": ffmpeg_ok, "ver": ffmpeg_ver},
+        "ffprobe": {"bin": ffprobe_bin, "ok": ffprobe_ok, "ver": ffprobe_ver},
+        "js": js_info,
+    }
+    _LAST_BINARY_CHECK_TS = now
+    return _CACHED_HEALTH_BINARIES
+
 
 def check_js_runtime() -> Dict[str, Any]:
     """Check for Deno or Node.js runtime presence and version."""
@@ -55,37 +103,17 @@ def get_system_health() -> Dict[str, Any]:
     """
     failing: List[str] = []
 
-    # 1. FFmpeg
-    ffmpeg_bin = find_ffmpeg()
-    ffmpeg_ok = False
-    ffmpeg_ver = ""
-    if shutil.which(ffmpeg_bin) or (os.path.isabs(ffmpeg_bin) and os.path.exists(ffmpeg_bin)):
-        try:
-            res = subprocess.run([ffmpeg_bin, "-version"], capture_output=True, text=True, timeout=3.0)
-            if res.returncode == 0:
-                ffmpeg_ok = True
-                first_line = res.stdout.splitlines()[0] if res.stdout else ""
-                ffmpeg_ver = first_line.replace("ffmpeg version", "").strip().split(" ")[0]
-        except Exception:
-            ffmpeg_ok = True
-            ffmpeg_ver = "available"
+    # Get cached or fresh binary checks (sub-millisecond when cached)
+    cached = _get_cached_binaries()
+    ffmpeg_bin = cached["ffmpeg"]["bin"]
+    ffmpeg_ok = cached["ffmpeg"]["ok"]
+    ffmpeg_ver = cached["ffmpeg"]["ver"]
     if not ffmpeg_ok:
         failing.append("ffmpeg missing or unexecutable")
 
-    # 2. FFprobe
-    ffprobe_bin = find_ffprobe()
-    ffprobe_ok = False
-    ffprobe_ver = ""
-    if shutil.which(ffprobe_bin) or (os.path.isabs(ffprobe_bin) and os.path.exists(ffprobe_bin)):
-        try:
-            res = subprocess.run([ffprobe_bin, "-version"], capture_output=True, text=True, timeout=3.0)
-            if res.returncode == 0:
-                ffprobe_ok = True
-                first_line = res.stdout.splitlines()[0] if res.stdout else ""
-                ffprobe_ver = first_line.replace("ffprobe version", "").strip().split(" ")[0]
-        except Exception:
-            ffprobe_ok = True
-            ffprobe_ver = "available"
+    ffprobe_bin = cached["ffprobe"]["bin"]
+    ffprobe_ok = cached["ffprobe"]["ok"]
+    ffprobe_ver = cached["ffprobe"]["ver"]
     if not ffprobe_ok:
         failing.append("ffprobe missing or unexecutable")
 
@@ -94,7 +122,7 @@ def get_system_health() -> Dict[str, Any]:
         failing.append("yt-dlp missing or unimportable")
 
     # 4. JS Runtime (Node or Deno)
-    js_info = check_js_runtime()
+    js_info = cached["js"]
     if not js_info["found"]:
         failing.append("JS runtime (Deno or Node) not found in PATH")
 
@@ -147,17 +175,32 @@ def get_system_health() -> Dict[str, Any]:
         "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         "ffmpeg": {
             "found": ffmpeg_ok,
+            "present": ffmpeg_ok,
             "version": ffmpeg_ver or "not found",
             "path": ffmpeg_bin,
         },
         "ffprobe": {
             "found": ffprobe_ok,
+            "present": ffprobe_ok,
             "version": ffprobe_ver or "not found",
             "path": ffprobe_bin,
         },
         "yt_dlp_version": YTDLP_VERSION or "not installed",
+        "yt_dlp": {
+            "present": bool(YTDLP_VERSION),
+            "version": YTDLP_VERSION or "not installed",
+        },
+        "python": {
+            "version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        },
         "js_runtime": js_info,
         "data_folder": {
+            "path": str(data_dir_path),
+            "writable": writable,
+            "free_space_gb": free_gb,
+            "total_space_gb": total_gb,
+        },
+        "data_dir": {
             "path": str(data_dir_path),
             "writable": writable,
             "free_space_gb": free_gb,
@@ -166,6 +209,11 @@ def get_system_health() -> Dict[str, Any]:
         "project_path": {
             "path": project_path_str,
             "length": path_len,
+            "warning": path_warning,
+        },
+        "path_safety": {
+            "path_length": path_len,
+            "project_path": project_path_str,
             "warning": path_warning,
         },
         "time": datetime.now(timezone.utc).isoformat(),

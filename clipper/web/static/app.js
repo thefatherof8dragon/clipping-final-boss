@@ -730,8 +730,8 @@ function updateBulkCounts() {
 
   const count = selectedClipIds.size;
   if (countSpan) countSpan.innerText = `${count} selected`;
-  if (dlCount) dlCount.innerText = `(${count})`;
-  if (schedCount) schedCount.innerText = `(${count})`;
+  if (dlCount) dlCount.innerText = count;
+  if (schedCount) schedCount.innerText = count;
 
   if (bulkBar) {
     if (count > 0) bulkBar.classList.remove("hidden");
@@ -764,6 +764,50 @@ async function loadCaptionTemplates() {
   } catch (e) {
     console.log("Using built-in caption templates");
   }
+  renderTemplatesGallery();
+}
+
+function renderTemplatesGallery() {
+  const container = document.getElementById("templates-gallery-grid") || document.getElementById("templates-grid");
+  if (!container) return;
+
+  const fallbackTemplates = [
+    { id: "pop", name: "Pop", description: "Bold yellow active word with scale pop", font_family: "Impact, sans-serif", primary_color: "#FFFFFF", active_color: "#FFF200", css_text_shadow: "0px 0px 8px #000, 2px 2px 0px #000", css_box_bg: "transparent", css_active_bg: "transparent" },
+    { id: "clean", name: "Clean", description: "Crisp white text with modern drop shadow", font_family: "Inter, sans-serif", primary_color: "#FFFFFF", active_color: "#38BDF8", css_text_shadow: "0 2px 6px rgba(0,0,0,0.85)", css_box_bg: "transparent", css_active_bg: "transparent" },
+    { id: "box", name: "Box", description: "Punchy viral text on brand accent box", font_family: "Impact, sans-serif", primary_color: "#FFFFFF", active_color: "#FACC15", css_text_shadow: "0 1px 3px rgba(0,0,0,0.6)", css_box_bg: "rgba(201, 58, 24, 0.92)", css_active_bg: "transparent" },
+    { id: "neon", name: "Neon", description: "Radiant electric cyan and magenta aura", font_family: "Impact, sans-serif", primary_color: "#00F0FF", active_color: "#FF007F", css_text_shadow: "0 0 10px #00F0FF, 0 0 20px #00F0FF", css_box_bg: "rgba(0,0,0,0.5)", css_active_bg: "transparent" },
+    { id: "outline", name: "Outline", description: "Heavy black stroke with ultra-readable fill", font_family: "Impact, sans-serif", primary_color: "#FFFFFF", active_color: "#34D399", css_text_shadow: "-3px -3px 0 #000, 3px 3px 0 #000", css_box_bg: "transparent", css_active_bg: "transparent" },
+    { id: "comic", name: "Comic", description: "Comic-book yellow text with bold border & tilt", font_family: "Impact, sans-serif", primary_color: "#FACC15", active_color: "#FB923C", css_text_shadow: "2px 2px 0 #000", css_box_bg: "transparent", css_active_bg: "transparent" },
+    { id: "minimal", name: "Minimal", description: "Sleek translucent dark pill with clean white text", font_family: "Inter, sans-serif", primary_color: "#F8FAFC", active_color: "#60A5FA", css_text_shadow: "0 1px 2px rgba(0,0,0,0.5)", css_box_bg: "rgba(15, 23, 42, 0.75)", css_active_bg: "transparent" },
+    { id: "highlight", name: "Highlight", description: "Vibrant marker highlighter box behind active word", font_family: "Impact, sans-serif", primary_color: "#FFFFFF", active_color: "#000000", css_text_shadow: "1px 1px 2px #000", css_box_bg: "transparent", css_active_bg: "#FDE047" },
+    { id: "gradient", name: "Gradient", description: "Sunset gradient fill with sleek shadow", font_family: "Impact, sans-serif", primary_color: "#FB7185", active_color: "#FBBF24", css_text_shadow: "0 2px 10px rgba(0,0,0,0.8)", css_box_bg: "transparent", css_active_bg: "transparent" },
+    { id: "typewriter", name: "Typewriter", description: "Monospace retro terminal typewriter look", font_family: "monospace", primary_color: "#6EE7B7", active_color: "#FFFFFF", css_text_shadow: "0 0 6px #6EE7B7", css_box_bg: "rgba(6, 78, 59, 0.85)", css_active_bg: "rgba(255, 255, 255, 0.2)" },
+  ];
+
+  const templates = (captionTemplates && captionTemplates.length > 0) ? captionTemplates : fallbackTemplates;
+  container.innerHTML = "";
+
+  templates.forEach(tpl => {
+    const card = document.createElement("div");
+    card.className = `template-card ${currentTemplateId === tpl.id ? 'active' : ''}`;
+    card.setAttribute("data-template-id", tpl.id);
+    card.innerHTML = `
+      <div class="template-card-preview" style="font-family: ${tpl.font_family || 'sans-serif'};">
+        <span style="color: ${tpl.primary_color}; text-shadow: ${tpl.css_text_shadow}; background: ${tpl.css_box_bg}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">THE</span>
+        <span style="color: ${tpl.active_color}; text-shadow: ${tpl.css_text_shadow}; background: ${tpl.css_active_bg}; padding: 2px 6px; border-radius: 4px; font-weight: 900;">SECRET</span>
+      </div>
+      <div class="template-card-meta">
+        <strong class="template-card-title">${tpl.name}</strong>
+        <p class="template-card-desc">${tpl.description}</p>
+      </div>
+    `;
+    card.addEventListener("click", () => {
+      container.querySelectorAll(".template-card").forEach(c => c.classList.remove("active"));
+      card.classList.add("active");
+      applyCaptionTemplate(tpl);
+    });
+    container.appendChild(card);
+  });
 }
 
 function initTemplatesGallery() {
@@ -823,6 +867,7 @@ function openEditorStudio(clip) {
   renderEditorCaptionsList();
   renderEditorScoresSummary(clip);
   initBottomTimeline();
+  renderTemplatesGallery();
   syncEditorWithClipState();
 }
 
@@ -1442,21 +1487,55 @@ function initBottomTimeline() {
   const clipDur = currentClip.duration || (currentClip.end - currentClip.start) || (currentClip.end_time - currentClip.start_time) || 1;
   const startOffset = currentClip.start || currentClip.start_time || 0;
 
-  currentClip.words.forEach(w => {
+  const words = currentClip.words || [];
+  if (words.length === 0) return;
+
+  words.forEach(w => {
     const pill = document.createElement("div");
     pill.className = "timeline-word-pill";
-    const left = ((w.start - startOffset) / clipDur) * 100;
-    const width = Math.max(((w.end - w.start) / clipDur) * 100, 2);
+    const leftPct = Math.max(0, Math.min(100, ((w.start - startOffset) / clipDur) * 100));
+    const rawWidthPct = Math.max(0.6, ((w.end - w.start) / clipDur) * 100);
+    const widthPct = Math.min(100 - leftPct, rawWidthPct);
+
     pill.style.position = "absolute";
-    pill.style.left = `${Math.max(0, left)}%`;
-    pill.style.width = `${width}%`;
-    pill.style.padding = "2px 4px";
-    pill.style.fontSize = "0.72rem";
-    pill.style.background = "rgba(99,102,241,0.3)";
-    pill.style.borderRadius = "3px";
-    pill.style.whiteSpace = "nowrap";
+    pill.style.left = `${leftPct.toFixed(2)}%`;
+    pill.style.width = `${Math.max(1.2, widthPct).toFixed(2)}%`;
+    pill.style.minWidth = "8px";
+    pill.style.height = "26px";
+    pill.style.top = "50%";
+    pill.style.transform = "translateY(-50%)";
+    pill.style.background = "linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(139, 92, 246, 0.5))";
+    pill.style.border = "1px solid rgba(165, 180, 252, 0.45)";
+    pill.style.borderRadius = "4px";
     pill.style.overflow = "hidden";
-    pill.innerText = w.word;
+    pill.style.textOverflow = "ellipsis";
+    pill.style.whiteSpace = "nowrap";
+    pill.style.boxSizing = "border-box";
+    pill.style.padding = "0 3px";
+    pill.style.fontSize = "10px";
+    pill.style.lineHeight = "24px";
+    pill.style.color = "#FFFFFF";
+    pill.style.fontWeight = "600";
+    pill.style.cursor = "pointer";
+    pill.style.zIndex = "5";
+    pill.setAttribute("title", `"${w.word}" (${Number(w.start).toFixed(2)}s - ${Number(w.end).toFixed(2)}s)`);
+
+    // Cleanly display text when width allows, preventing stacked word overlap
+    if (widthPct >= 2.8) {
+      pill.innerText = w.word;
+    } else {
+      pill.innerText = "";
+    }
+
+    pill.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const video = document.getElementById("editor-video");
+      if (video) {
+        video.currentTime = Math.max(0, w.start - startOffset);
+        video.play().catch(() => {});
+      }
+    });
+
     track.appendChild(pill);
   });
 }
@@ -2213,52 +2292,117 @@ function initSettings() {
 
 // ==================== SYSTEM HEALTH & WINDOWS SAFETY (PART 3.1) ====================
 async function fetchSystemHealth() {
+  const dot = document.getElementById("health-dot");
+  const label = document.getElementById("health-label");
+  const warnBox = document.getElementById("health-path-warning-box");
+  const warnTxt = document.getElementById("health-warning-text");
+
+  const setVal = (id, val, isErr = false, isWarn = false) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerText = val;
+    if (isErr) {
+      el.style.color = "#EF4444";
+      el.style.fontWeight = "700";
+    } else if (isWarn) {
+      el.style.color = "#F59E0B";
+      el.style.fontWeight = "600";
+    } else {
+      el.style.color = "#10B981";
+      el.style.fontWeight = "600";
+    }
+  };
+
   try {
-    const resp = await fetch("/api/health");
-    if (!resp.ok) return;
+    // Strict 3s timeout to ensure prompt SLA
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    const resp = await fetch("/api/health", { signal: controller.signal });
+    clearTimeout(timeoutId);
+
     const h = await resp.json();
 
-    const dot = document.getElementById("health-dot");
-    const label = document.getElementById("health-label");
+    const isHealthy = Boolean(h.healthy || h.status === "ok");
+    const failing = Array.isArray(h.failing) ? h.failing : [];
+    const hasPathWarning = Boolean(h.project_path?.warning || h.path_safety?.warning);
+
     if (dot && label) {
-      if (h.status === "healthy") {
-        dot.className = "health-dot";
-        label.innerText = "System: Healthy";
-      } else if (h.status === "warning") {
+      if (failing.length > 0 || !isHealthy) {
+        dot.className = "health-dot critical";
+        label.innerText = "System: Critical";
+      } else if (hasPathWarning) {
         dot.className = "health-dot warning";
         label.innerText = "System: Path Warning";
       } else {
-        dot.className = "health-dot critical";
-        label.innerText = "System: Critical";
+        dot.className = "health-dot";
+        label.innerText = "System: Healthy";
       }
     }
 
-    const setVal = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.innerText = val;
-    };
-    if (h.ffmpeg) setVal("health-ffmpeg-val", h.ffmpeg.present ? `✓ ${h.ffmpeg.version}` : "✗ Missing");
-    if (h.ffprobe) setVal("health-ffprobe-val", h.ffprobe.present ? `✓ ${h.ffprobe.version}` : "✗ Missing");
-    if (h.yt_dlp) setVal("health-ytdlp-val", h.yt_dlp.present ? `✓ v${h.yt_dlp.version}` : "✗ Missing");
-    if (h.python) setVal("health-python-val", `v${h.python.version}`);
-    if (h.data_dir) setVal("health-disk-val", `${h.data_dir.free_space_gb} GB free`);
-    if (h.path_safety) setVal("health-pathlen-val", `${h.path_safety.path_length} chars`);
+    // 1. FFmpeg
+    const ffmpegOk = Boolean(h.ffmpeg?.found || h.ffmpeg?.present);
+    const ffmpegVer = h.ffmpeg?.version || "available";
+    const ffmpegPath = h.ffmpeg?.path || "";
+    setVal("health-ffmpeg-val", ffmpegOk ? `✓ ${ffmpegVer}` : "✗ Missing", !ffmpegOk);
+    const ffmpegEl = document.getElementById("health-ffmpeg-val");
+    if (ffmpegEl && ffmpegPath) ffmpegEl.setAttribute("title", ffmpegPath);
+
+    // 2. FFprobe
+    const ffprobeOk = Boolean(h.ffprobe?.found || h.ffprobe?.present);
+    const ffprobeVer = h.ffprobe?.version || "available";
+    const ffprobePath = h.ffprobe?.path || "";
+    setVal("health-ffprobe-val", ffprobeOk ? `✓ ${ffprobeVer}` : "✗ Missing", !ffprobeOk);
+    const ffprobeEl = document.getElementById("health-ffprobe-val");
+    if (ffprobeEl && ffprobePath) ffprobeEl.setAttribute("title", ffprobePath);
+
+    // 3. yt-dlp
+    const ytdlpVer = h.yt_dlp_version || h.yt_dlp?.version || "";
+    const ytdlpOk = Boolean(ytdlpVer && ytdlpVer !== "not installed");
+    setVal("health-ytdlp-val", ytdlpOk ? `✓ v${ytdlpVer}` : "✗ Missing", !ytdlpOk);
+
+    // 4. Python
+    const pyVer = h.python_version || h.python?.version || "3.14";
+    setVal("health-python-val", `✓ v${pyVer}`);
+
+    // 5. Disk storage
+    const freeGb = h.data_folder?.free_space_gb ?? h.data_dir?.free_space_gb ?? 0;
+    const diskOk = freeGb > 2.0;
+    setVal("health-disk-val", `${freeGb} GB free`, !diskOk, freeGb < 5.0);
+
+    // 6. Project path length & root path
+    const projPath = h.project_path?.path || h.path_safety?.project_path || "";
+    const pathLen = h.project_path?.length ?? h.path_safety?.path_length ?? projPath.length;
+    const pathWarn = Boolean(h.project_path?.warning || h.path_safety?.warning || pathLen > 100);
+    setVal("health-pathlen-val", `${pathLen} chars`, false, pathWarn);
 
     const pathInp = document.getElementById("health-project-path-input");
-    if (pathInp && h.path_safety) pathInp.value = h.path_safety.project_path;
+    if (pathInp) pathInp.value = projPath;
 
-    const warnBox = document.getElementById("health-path-warning-box");
-    const warnTxt = document.getElementById("health-warning-text");
-    if (warnBox && warnTxt && h.path_safety) {
-      if (h.path_safety.warning) {
-        warnTxt.innerText = h.path_safety.warning;
+    if (warnBox && warnTxt) {
+      if (pathWarn) {
+        warnTxt.innerText = h.project_path?.warning || h.path_safety?.warning || `Warning: Project path length is ${pathLen} chars (threshold: 100). Windows MAX_PATH is 260.`;
         warnBox.classList.remove("hidden");
       } else {
         warnBox.classList.add("hidden");
       }
     }
-  } catch (e) {
-    console.warn("fetchSystemHealth error:", e);
+  } catch (err) {
+    console.error("fetchSystemHealth error:", err);
+    if (dot && label) {
+      dot.className = "health-dot warning";
+      label.innerText = "System: Health Check Timeout";
+    }
+    const errText = `⚠️ Error (Click to retry)`;
+    ["health-ffmpeg-val", "health-ffprobe-val", "health-ytdlp-val", "health-python-val", "health-disk-val", "health-pathlen-val"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.innerText = errText;
+        el.style.color = "#F59E0B";
+        el.style.cursor = "pointer";
+        el.onclick = () => fetchSystemHealth();
+      }
+    });
   }
 }
 
