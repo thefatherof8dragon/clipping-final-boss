@@ -187,3 +187,9 @@ Error:         interrupted by restart
 Message:       Failed: interrupted by restart
 Progress:      25%
 ```
+
+### Step 6: Architectural Gap Analysis
+- **Deliverable**: `docs/gap-analysis.md`
+- **Methodology**: Evaluated our active codebase (`clipper/`) against PeakCut reference architecture (`scratch/PeakCut/`, MIT License).
+- **Scope**: 11 core architectural rows (live recording, rolling buffer, spike detection, ranking with score breakdown, per-clip editor, streamer pinning with name/avatar, AI title/caption/hashtags/thumbnail, scheduling and posting, health checks, gaming/GTA mode, job persistence).
+- **Core Recommendation**: Retain our modernized, zero-key offline-first modules (ranking, ASS kinetic templates, healthz, jobs), and port gaming presets from `PeakCut/GAMING.md`.
