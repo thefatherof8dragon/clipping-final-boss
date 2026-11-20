@@ -210,3 +210,13 @@ Progress:      25%
 - **Resolved Real Path**: `Z:\Clipping open source\clipper-kit\clipper-kit`
 - **True Path Length**: 47 characters (well under 100-character threshold).
 - **Move to `C:\clipper`**: Not required per criteria (`path_len <= 100`).
+
+### Step 2: Short Render Staging (clipper/renderer.py)
+- **Staging Directory Function**: `get_render_staging_dir()` resolving to `%TEMP%\clp_tmp` (length: 44 chars) or `C:\clipper_tmp`.
+- **Implementation**:
+  - Subtitle generation and FFmpeg filter graph write exclusively to `staging_dir / f"clp_{id}.ass"` and `staging_dir / f"clp_{id}.mp4"`.
+  - On render completion, `shutil.move()` atomically relocates the output MP4 to the target path `output_video`.
+  - All staging files are automatically cleaned up in `finally` blocks.
+- **Long Path Test**: `tests/test_short_render_staging.py`
+  - Created test destination with 5-level nested directories and filename totaling **387 characters** (exceeding Windows 260 MAX_PATH limit).
+  - Test Result: **2 passed in 3.28s**. Clip rendered and moved successfully into 387-character path.

@@ -2,6 +2,9 @@
 
 import os
 import re
+import shutil
+import tempfile
+import uuid
 import subprocess
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
@@ -246,6 +249,20 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     output_ass.write_text(header + "\n".join(events) + "\n", encoding="utf-8")
 
+def get_render_staging_dir() -> Path:
+    """Returns a short, writable staging directory for FFmpeg rendering."""
+    for candidate in [Path("C:/clipper_tmp"), Path(tempfile.gettempdir()) / "clp_tmp"]:
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            test_file = candidate / f".probe_{os.getpid()}"
+            test_file.write_text("ok", encoding="utf-8")
+            test_file.unlink(missing_ok=True)
+            return candidate
+        except Exception:
+            continue
+    fallback = Path(tempfile.gettempdir())
+    return fallback
+
 def render_clip(
     input_video: Path,
     output_video: Path,
@@ -261,10 +278,17 @@ def render_clip(
 ) -> bool:
     """
     Renders clip with chosen aspect ratio, framing mode, captions, and overlays.
+    Uses short staging folder for FFmpeg execution to prevent Windows MAX_PATH limits,
+    then atomically moves completed video to output_video.
     """
     ffmpeg = find_ffmpeg()
     target_w, target_h = ASPECT_RATIOS.get(aspect_ratio, (1080, 1920))
     output_video.parent.mkdir(parents=True, exist_ok=True)
+
+    staging_dir = get_render_staging_dir()
+    staging_id = uuid.uuid4().hex[:8]
+    staging_video = staging_dir / f"clp_{staging_id}.mp4"
+    staging_ass = staging_dir / f"clp_{staging_id}.ass"
 
     # Determine trim duration
     trim_duration = None
@@ -273,14 +297,8 @@ def render_clip(
 
     # Build video filter graph based on framing mode
     if framing == "crop_to_face":
-        # Compute face center
         center_x, center_y = detect_face_centers(input_video)
-        # Target aspect ratio as float
         target_ratio = target_w / target_h
-
-        # In crop_to_face:
-        # If target is taller than source (e.g. 9:16 from 16:9), crop width = H * target_ratio
-        # If target is wider than source, crop height = W / target_ratio
         filter_base = (
             f"[0:v]split[v1][v2];"
             f"[v1]scale=trunc(ih*{target_ratio}/2)*2:ih[face_crop];"
@@ -298,13 +316,12 @@ def render_clip(
             f"[bg][fg]overlay=(W-w)/2:(H-h)/2[base]"
         )
 
-    # Subtitles handling
-    ass_path = output_video.with_suffix(".ass")
+    # Subtitles handling in short staging directory
     has_subtitles = False
     if captions_on and (words or (hook_text and hook_text.strip())):
         generate_ass_subtitles(
             words=words or [],
-            output_ass=ass_path,
+            output_ass=staging_ass,
             style=caption_style,
             target_w=target_w,
             target_h=target_h,
@@ -312,12 +329,11 @@ def render_clip(
             trim_offset=trim_start,
             custom_style=custom_style,
         )
-        has_subtitles = ass_path.exists()
+        has_subtitles = staging_ass.exists()
 
     # Format subtitles filter safely for Windows path escaping
     if has_subtitles:
-        # FFmpeg ass filter requires escaping colons and backslashes
-        ass_str = str(ass_path).replace("\\", "/").replace(":", "\\:")
+        ass_str = str(staging_ass).replace("\\", "/").replace(":", "\\:")
         video_filter = f"{filter_base};[base]ass='{ass_str}'[outv]"
     else:
         video_filter = f"{filter_base};[base]null[outv]"
@@ -343,12 +359,15 @@ def render_clip(
         "-b:a", "128k",
         "-pix_fmt", "yuv420p",
         "-movflags", "+faststart",
-        str(output_video),
+        str(staging_video),
     ])
 
+    success = False
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return output_video.exists() and output_video.stat().st_size > 1000
+        if staging_video.exists() and staging_video.stat().st_size > 1000:
+            shutil.move(str(staging_video), str(output_video))
+            success = output_video.exists() and output_video.stat().st_size > 1000
     except subprocess.CalledProcessError as e:
         print(f"Render failed with error: {e.stderr}")
         # If ASS filter failed (e.g. fontconfig), retry without ASS
@@ -373,16 +392,24 @@ def render_clip(
                     "-b:a", "128k",
                     "-pix_fmt", "yuv420p",
                     "-movflags", "+faststart",
-                    str(output_video),
+                    str(staging_video),
                 ])
                 subprocess.run(cmd_retry, capture_output=True, check=True)
-                return output_video.exists() and output_video.stat().st_size > 1000
+                if staging_video.exists() and staging_video.stat().st_size > 1000:
+                    shutil.move(str(staging_video), str(output_video))
+                    success = output_video.exists() and output_video.stat().st_size > 1000
             except Exception as e2:
                 print(f"Render retry failed: {e2}")
-        return False
     finally:
-        if ass_path.exists():
+        if staging_ass.exists():
             try:
-                ass_path.unlink(missing_ok=True)
+                staging_ass.unlink(missing_ok=True)
             except Exception:
                 pass
+        if staging_video.exists():
+            try:
+                staging_video.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+    return success
