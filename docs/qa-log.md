@@ -193,3 +193,8 @@ Progress:      25%
 - **Methodology**: Evaluated our active codebase (`clipper/`) against PeakCut reference architecture (`scratch/PeakCut/`, MIT License).
 - **Scope**: 11 core architectural rows (live recording, rolling buffer, spike detection, ranking with score breakdown, per-clip editor, streamer pinning with name/avatar, AI title/caption/hashtags/thumbnail, scheduling and posting, health checks, gaming/GTA mode, job persistence).
 - **Core Recommendation**: Retain our modernized, zero-key offline-first modules (ranking, ASS kinetic templates, healthz, jobs), and port gaming presets from `PeakCut/GAMING.md`.
+
+### Step 7: Path Move Condition
+- **Evaluation**: Project full path is `Z:\Clipping open source\clipper-kit\clipper-kit` (length: 47 characters).
+- **Condition Check**: `path_len <= 100` and path is on external workspace drive Z: (not in nested AppData/IDE temp folder).
+- **Status**: **SKIPPED** per specification ("only if Step 0 flagged a long or IDE-workspace path").
