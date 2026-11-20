@@ -8,34 +8,37 @@ Everything runs on your local hardware (`127.0.0.1:8000`). No cloud subscription
 
 ## 5-Step Quickstart
 
-1. **Clone the repository:**
+1. **Clone or move the repository into a short path:**
    ```bash
-   git clone https://github.com/your-username/clipping-final-boss.git
-   cd clipping-final-boss
+   git clone https://github.com/your-username/clipping-final-boss.git C:\clipper
+   cd C:\clipper
    ```
+   > ⚠️ **Windows Path Limit (MAX_PATH = 260)**: Always run in a directory under 100 characters (e.g. `C:\clipper`). Clipper automatically stages intermediate FFmpeg rendering and ASS subtitle files in `%TEMP%\clp_tmp` before moving them into `data/out/` to eliminate path truncation errors.
 
 2. **Install Python 3.10+ and FFmpeg:**
-   - **Python**: Download and install Python 3.10 or higher from [python.org](https://www.python.org/).
+   - **Python**: Download and install Python 3.10 to 3.14 from [python.org](https://www.python.org/).
    - **FFmpeg**:
      - *Windows*: `winget install Gyan.FFmpeg`
      - *macOS*: `brew install ffmpeg`
      - *Linux*: `sudo apt update && sudo apt install ffmpeg`
+   - **Node.js** (Optional/Recommended for YouTube challenge solving): `winget install OpenJS.NodeJS.LTS`
 
 3. **Run the single entrypoint runner:**
    ```bash
    python run.py
    ```
-   *(This script automatically creates a `.venv` virtual environment, installs all pinned requirements, verifies FFmpeg, and launches the FastAPI server).*
+   *(This script automatically creates a `.venv` virtual environment, installs all pinned requirements, verifies FFmpeg, and launches the FastAPI server at `http://127.0.0.1:8000`).*
 
 4. **Open in your web browser:**
    ```
    http://127.0.0.1:8000
    ```
 
-5. **Optional: Add API keys in Settings:**
+5. **Optional: Add API keys or Presets in Settings:**
    - Navigate to the **Settings** tab in the web UI.
    - You can optionally paste your Google Gemini, OpenAI, Groq, Anthropic, or Ollama endpoint keys.
-   - You can also configure YouTube OAuth credentials to schedule Shorts directly.
+   - Zero-key mode works 100% locally out of the box (faster-whisper + RMS loudness + local heuristic generator).
+   - Gaming & GTA VI Launch presets prioritize clutch moments, boss fights, hype spikes, and Vice City triggers.
 
 ---
 
@@ -57,6 +60,15 @@ Everything runs on your local hardware (`127.0.0.1:8000`). No cloud subscription
 
 ---
 
+## Multi-Platform Social Export
+
+Each clip card features one-click copy buttons tailored for social platforms:
+- **📱 TikTok**: Hook + concise caption + 4–6 high-CTR hashtags (`#fyp`, `#viral`), clamped within 2,200 characters.
+- **📸 Instagram Reels**: Spaced caption structure (`hook` + `\n.\n` + tags) including `#reels` and `#reelsinstagram`.
+- **▶️ YouTube Shorts**: Optimized 100-character title with `#shorts`, full description, and clean comma-separated tag strings.
+
+---
+
 ## Zero-Key Mode vs. Optional Cloud Keys
 
 Clipping Final Boss works **100% locally with no keys**:
@@ -68,21 +80,22 @@ Clipping Final Boss works **100% locally with no keys**:
 
 ---
 
-## CI & Automated Tests
+## Test Suite
 
-Run test suite:
+Run the single unified test runner:
 ```bash
-pytest
+python tests/run.py
 ```
 
-Run CI smoke test:
+Check health status:
 ```bash
-python scripts/smoke_test.py
+curl http://127.0.0.1:8000/healthz
 ```
 
 ---
 
 ## Credits & Acknowledgments
 
-* **[PeakCut](https://github.com/haziqahmedqasmi/PeakCut)** (MIT License): Special thanks to Haziq Ahmed Qasmi and the PeakCut project for their inspiring architecture and designs around live-stream segment buffering, Twitch anonymous IRC chat monitoring, and real-time audio analysis.
+* **[PeakCut](https://github.com/haziqahmedqasmi/PeakCut)** (MIT License): Based on and inspired by PeakCut by Haziq Ahmed Qasmi. Special thanks for the foundational concepts in live-stream rolling buffer management, chat spike signal tracking, game detection heuristics, and kinetic subtitle rendering.
+
 
