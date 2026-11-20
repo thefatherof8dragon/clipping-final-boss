@@ -374,3 +374,11 @@ Progress:      25%
 - **Test Suite Run**:
   - `python tests/run.py` -> **42 passed (Exit code 0)**.
 - **Result**: **Three consecutive clean passes achieved with zero errors.**
+
+
+## Stage C run 1 (2026-11-20)
+
+### Step 1: Resolve Frontend Contradiction
+- **Action**: Safely moved all inactive React/Tailwind artifacts (`package.json`, `components.json`, `tailwind.config.js`, `tsconfig.json`, `components/`, `lib/`) into `archive/react_redesign/`.
+- **Active UI Standard**: `clipper/web/static/` remains the canonical, zero-build, zero-npm desktop application frontend served directly by FastAPI at `http://127.0.0.1:8000`.
+- **Result**: Root directory free of contradictory build configs.
