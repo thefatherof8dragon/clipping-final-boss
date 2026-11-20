@@ -220,3 +220,45 @@ Progress:      25%
 - **Long Path Test**: `tests/test_short_render_staging.py`
   - Created test destination with 5-level nested directories and filename totaling **387 characters** (exceeding Windows 260 MAX_PATH limit).
   - Test Result: **2 passed in 3.28s**. Clip rendered and moved successfully into 387-character path.
+
+### Step 3: Real YouTube End-to-End Proof (English & Hindi)
+- **English Test Video**:
+  - URL: `https://www.youtube.com/watch?v=Y6bbMQXQ180`
+  - Title: *"Secrets of success in 8 words, 3 minutes | Richard St. John"*
+  - Source Duration: `226.0s`
+  - Session Directory: `data/out/session_1/`
+  - Total Ranked Clips Generated: `3`
+  - Ranked Clips Table:
+    1. **Rank #1**: `"What 500 TED interviews taught me about success"` (Duration: `15.23s`, Score: `69.9`, Breakdown: Hook=80.2, Emotion=62.4, Story=59.0, Trend=70.0)
+       - ffprobe: `1080x1920`, `h264`, `aac`, size: `4,478,693 bytes`
+       - Frames: `scratch/english_clip_1_frame_1_3s.jpg` (t=3.79s, mean BGR: `[71.61, 35.85, 20.99]`, non-black) & `scratch/english_clip_1_frame_2_11s.jpg` (t=11.38s, mean BGR: `[84.68, 46.36, 29.74]`, non-black). Real stage talk footage with kinetic caption overlay.
+       - Caption words: `[56.84s - 56.94s]: "So"`, `[56.94s - 57.02s]: "why"`, `[57.02s - 57.22s]: "don't"`, `[57.22s - 57.32s]: "I"`, `[57.32s - 57.58s]: "ask"`, `[57.58s - 57.80s]: "them"`.
+    2. **Rank #2**: `"Do what you love and the money will follow"` (Duration: `16.70s`, Score: `64.5`, Breakdown: Hook=59.0, Emotion=74.0, Story=59.0, Trend=70.0)
+       - ffprobe: `1080x1920`, `h264`, `aac`, size: `1,780,223 bytes`
+       - Frames: `scratch/english_clip_2_frame_1_4s.jpg` (t=4.17s) & `scratch/english_clip_2_frame_2_12s.jpg` (t=12.5s). Real speaker and presentation slides. Non-black.
+       - Caption words: `[76.96s - 76.98s]: "They"`, `[76.98s - 77.18s]: "don't"`, `[77.18s - 77.38s]: "do"`, `[77.38s - 77.54s]: "it"`, `[77.54s - 77.62s]: "for"`, `[77.62s - 77.90s]: "money."`.
+    3. **Rank #3**: `"The Real Secret To Success (After 500 Interviews)"` (Duration: `18.30s`, Score: `63.8`, Breakdown: Hook=56.1, Emotion=75.8, Story=59.0, Trend=70.0)
+       - ffprobe: `1080x1920`, `h264`, `aac`, size: `3,162,994 bytes`
+       - Frames: `scratch/english_clip_3_frame_1_4s.jpg` (t=4.56s) & `scratch/english_clip_3_frame_2_13s.jpg` (t=13.68s). Non-black.
+
+- **Hindi/Hinglish Test Video**:
+  - URL: `https://www.youtube.com/watch?v=abI0txiZSyI`
+  - Title: *"PM Modi ने Quad समिट में Trump के सामने ऐसा क्या कहा जिसकी हो रही है चर्चा?(BBC Hindi)"*
+  - Source Duration: `262.0s`
+  - Session Directory: `data/out/session_2/`
+  - Total Ranked Clips Generated: `3`
+  - Ranked Clips Table:
+    1. **Rank #1**: `"Modi & Media Stress: Inside the Political Drama!"` (Duration: `28.32s`, Score: `62.5`, Breakdown: Hook=59.3, Emotion=57.2, Story=71.0, Trend=70.0)
+       - ffprobe: `1080x1920`, `h264`, `aac`, size: `3,741,615 bytes`
+       - Frames: `scratch/hindi_clip_1_frame_1_7s.jpg` (t=7.07s, mean BGR: `[36.23, 27.91, 36.74]`, non-black) & `scratch/hindi_clip_1_frame_2_21s.jpg` (t=21.21s, mean BGR: `[203.22, 198.97, 196.93]`, non-black). Real summit footage showing world leaders.
+       - Caption words: `[131.16s - 131.62s]: "When"`, `[131.62s - 132.00s]: "the"`, `[132.00s - 132.18s]: "press"`, `[132.18s - 132.44s]: "didn't"`, `[132.44s - 132.64s]: "go"`, `[132.64s - 132.82s]: "out,"`.
+    2. **Rank #2**: `"Trump Reveals The Truth About Modi's Leadership!"` (Duration: `30.04s`, Score: `60.6`, Breakdown: Hook=43.0, Emotion=69.0, Story=69.0, Trend=84.0)
+       - ffprobe: `1080x1920`, `h264`, `aac`, size: `3,260,343 bytes`
+       - Frames: `scratch/hindi_clip_2_frame_1_7s.jpg` (t=7.49s) & `scratch/hindi_clip_2_frame_2_22s.jpg` (t=22.47s). Non-black.
+       - Caption words: `[94.54s - 94.76s]: "I"`, `[94.76s - 94.86s]: "have"`, `[94.86s - 94.90s]: "been"`, `[94.90s - 95.28s]: "with"`, `[95.28s - 95.80s]: "all"`, `[95.80s - 96.04s]: "three"`.
+    3. **Rank #3**: `"PM Modi ne aisa kya bola ki sabhi hairan reh gaye?"` (Duration: `16.88s`, Score: `58.3`, Breakdown: Hook=64.1, Emotion=52.1, Story=47.0, Trend=70.0)
+       - ffprobe: `1080x1920`, `h264`, `aac`, size: `3,343,541 bytes`
+       - Frames: `scratch/hindi_clip_3_frame_1_4s.jpg` (t=4.21s) & `scratch/hindi_clip_3_frame_2_12s.jpg` (t=12.63s). Non-black.
+       - Caption words (Hinglish): `[51.80s - 52.10s]: "Savalk"`, `[52.10s - 52.40s]: "jabab"`, `[52.40s - 52.52s]: "ka"`, `[52.52s - 52.74s]: "dhoar"`, `[52.74s - 53.12s]: "challahi"`, `[53.12s - 53.58s]: "dahata"` (*"Sawaal jawaab ka daur chal hi raha tha"*).
+  - Glyph Rendering Check: Verified no missing-glyph tofu/boxes (`[?]`); ASS Arial/Inter fallback cleanly renders all alphanumeric and Devanagari romanized characters.
+- **Server Logs**: Monitored `task-934.log` throughout run; zero fatal exceptions or unhandled tracebacks.
