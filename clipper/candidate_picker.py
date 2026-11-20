@@ -55,6 +55,19 @@ TREND_KEYWORDS = {
     "clutch", "goat", "w", "l", "banned", "drama", "update", "secret"
 }
 
+GAMING_KEYWORDS = {
+    "clutch", "headshot", "boss", "fail", "mission passed", "hype", "kill", "ace", "died", "wipe",
+    "gg", "glitch", "spawn", "loot", "drop", "respawn", "sniper", "quad", "victory", "eliminated",
+    "defuse", "knocked", "revive", "nuke", "mod", "rage", "ranked", "streamer", "noob", "pro",
+    "speedrun", "combo", "one tap", "stolen", "triple kill", "game over"
+}
+
+GTA6_KEYWORDS = {
+    "gta", "gta6", "gta 6", "vice city", "lucia", "jason", "rockstar", "grand theft auto",
+    "wanted level", "cops", "heist", "leonida", "trailer", "leaks", "busted", "wasted",
+    "oppressor", "driveby", "five stars", "five star"
+}
+
 def analyze_audio_loudness(video_path: Path, duration: float) -> np.ndarray:
     """Extract second-by-second audio RMS loudness using ffmpeg and numpy."""
     ffmpeg = find_ffmpeg()
@@ -104,6 +117,7 @@ def calculate_candidate_scores(
     has_chat: bool,
     window_words: List[Dict[str, Any]],
     window_text: str,
+    preset: Optional[str] = None,
 ) -> Dict[str, float]:
     """Calculate distinct, nuanced metric scores for a specific time window."""
     s_idx = max(0, int(start_sec))
@@ -131,6 +145,15 @@ def calculate_candidate_scores(
     if not first_sentence:
         first_sentence = " ".join(text_lower.split()[:10])
 
+    norm_preset = (preset or "").lower().strip()
+    is_gaming_preset = norm_preset in ("gaming", "gta6", "gameplay")
+    is_gta6_preset = norm_preset == "gta6"
+
+    gaming_hook = any(kw in first_sentence for kw in GAMING_KEYWORDS)
+    gaming_count = sum(1 for kw in GAMING_KEYWORDS if kw in text_lower)
+    gta6_hook = any(kw in first_sentence for kw in GTA6_KEYWORDS)
+    gta6_count = sum(1 for kw in GTA6_KEYWORDS if kw in text_lower)
+
     # 1. Hook Score
     hook = 38.0
     if "?" in first_sentence:
@@ -143,14 +166,29 @@ def calculate_candidate_scores(
         if kw in first_sentence:
             hook += 14.0
             break
+
+    # Preset gaming / GTA 6 hook bonus
+    if is_gta6_preset:
+        if gta6_hook:
+            hook += 25.0
+        elif gaming_hook:
+            hook += 18.0
+    elif is_gaming_preset:
+        if gaming_hook:
+            hook += 20.0
+    elif gaming_hook or gta6_hook:
+        hook += 10.0
+
     # Loudness surge at start boosts hook
     hook += min(15.0, loudness_jump * 0.4)
-    hook = max(15.0, min(98.0, hook + (avg_loudness * 0.1)))
+    hook = max(15.0, min(99.0, hook + (avg_loudness * 0.1)))
 
     # 2. Emotion Score
     emotion = 36.0
     emo_count = sum(1 for kw in EMOTION_KEYWORDS if kw in text_lower)
     emotion += min(35.0, emo_count * 14.0)
+    if is_gaming_preset or is_gta6_preset:
+        emotion += min(22.0, (gaming_count + gta6_count * 1.5) * 8.0)
     # Speech tempo: fast speech indicates excitement
     word_rate = len(window_words) / win_len if win_len > 0 else 0
     if word_rate > 2.5:
@@ -159,7 +197,7 @@ def calculate_candidate_scores(
         emotion += 10.0
     # Vocal volume fluctuation
     emotion += min(15.0, loud_std * 0.8)
-    emotion = max(15.0, min(97.0, emotion))
+    emotion = max(15.0, min(99.0, emotion))
 
     # 3. Story Score
     story = 35.0
@@ -175,9 +213,22 @@ def calculate_candidate_scores(
     trend = 34.0
     trend_count = sum(1 for kw in TREND_KEYWORDS if kw in text_lower)
     trend += min(40.0, trend_count * 18.0)
+
+    # Preset gaming / GTA 6 trend bonus
+    if is_gta6_preset:
+        if gta6_count > 0:
+            trend += min(35.0, gta6_count * 16.0)
+        if gaming_count > 0:
+            trend += min(20.0, gaming_count * 8.0)
+    elif is_gaming_preset:
+        if gaming_count > 0:
+            trend += min(30.0, gaming_count * 12.0)
+    elif gta6_count > 0 or gaming_count > 0:
+        trend += min(15.0, (gaming_count + gta6_count) * 6.0)
+
     if peak_loudness > 75.0:
         trend += 14.0
-    trend = max(15.0, min(95.0, trend))
+    trend = max(15.0, min(99.0, trend))
 
     # 5. Chat Score
     chat = 0.0
@@ -207,6 +258,7 @@ def find_candidate_moments(
     target_count: int = 5,
     min_clip_len: float = 20.0,
     max_clip_len: float = 60.0,
+    preset: Optional[str] = None,
 ) -> List[CandidateMoment]:
     """
     Finds candidate moments in video respecting length constraints and ensuring
@@ -293,6 +345,7 @@ def find_candidate_moments(
                 has_chat=has_chat,
                 window_words=w_words,
                 window_text=summary_text,
+                preset=preset,
             )
 
             candidates.append(CandidateMoment(
@@ -346,6 +399,7 @@ def find_candidate_moments(
                     has_chat=has_chat,
                     window_words=w_words,
                     window_text=summary_text,
+                    preset=preset,
                 )
 
                 candidates.append(CandidateMoment(

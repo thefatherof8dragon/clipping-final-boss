@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 from typing import Dict, Any, List, Optional, Set
 import httpx
 from .config import settings
+from .games import tags_of, get_game_rules, detect as detect_game
 
 logger = logging.getLogger("clipper.ai")
 
@@ -53,6 +54,7 @@ def extract_local_metadata(
     transcript_text: str,
     clip_rank: int = 1,
     used_titles: Optional[Set[str]] = None,
+    game: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Generates punchy, unique title, caption, and hashtags locally derived strictly from real speech."""
     if used_titles is None:
@@ -112,11 +114,16 @@ def extract_local_metadata(
             break
 
     hashtags = default_tags + content_tags
+    if game:
+        gtags = [f"#{t}" for t in tags_of(game) if t]
+        for t in reversed(gtags):
+            if t not in hashtags:
+                hashtags.insert(0, t)
 
     return {
         "title": unique_title,
         "caption": caption,
-        "hashtags": hashtags[:7],
+        "hashtags": hashtags[:8],
         "provider": "local_fallback",
     }
 
@@ -326,6 +333,7 @@ def generate_clip_metadata(
     transcript_text: str,
     clip_rank: int = 1,
     used_titles: Optional[Set[str]] = None,
+    game: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Generates metadata trying configured provider -> fallback, NEVER hanging."""
     if used_titles is None:
@@ -337,26 +345,46 @@ def generate_clip_metadata(
     if provider == "gemini" or (provider in ("auto", "") and settings.gemini_api_key):
         res = generate_with_gemini(transcript_text, settings.gemini_api_key, clip_rank, used_titles)
         if res:
+            if game:
+                gtags = [f"#{t}" for t in tags_of(game) if t]
+                for t in reversed(gtags):
+                    if t not in res["hashtags"]:
+                        res["hashtags"].insert(0, t)
             return res
 
     if provider == "openai" or (provider in ("auto", "") and settings.openai_api_key):
         res = generate_with_openai(transcript_text, settings.openai_api_key, clip_rank, used_titles)
         if res:
+            if game:
+                gtags = [f"#{t}" for t in tags_of(game) if t]
+                for t in reversed(gtags):
+                    if t not in res["hashtags"]:
+                        res["hashtags"].insert(0, t)
             return res
 
     if provider == "groq" or (provider in ("auto", "") and getattr(settings, "groq_api_key", "")):
         res = generate_with_groq(transcript_text, settings.groq_api_key, clip_rank, used_titles)
         if res:
+            if game:
+                gtags = [f"#{t}" for t in tags_of(game) if t]
+                for t in reversed(gtags):
+                    if t not in res["hashtags"]:
+                        res["hashtags"].insert(0, t)
             return res
 
     # 2. Try Ollama if configured
     if settings.ollama_url and is_ollama_online(settings.ollama_url):
         res = generate_with_ollama(transcript_text, settings.ollama_url, clip_rank, used_titles)
         if res:
+            if game:
+                gtags = [f"#{t}" for t in tags_of(game) if t]
+                for t in reversed(gtags):
+                    if t not in res["hashtags"]:
+                        res["hashtags"].insert(0, t)
             return res
 
     # 3. Always instant, reliable local fallback
-    return extract_fallback_metadata(transcript_text, clip_rank, used_titles)
+    return extract_fallback_metadata(transcript_text, clip_rank, used_titles, game=game)
 
 def generate_hook_alternatives(transcript_text: str, current_title: str) -> List[Dict[str, str]]:
     """Generates 3 punchy hook alternatives derived directly from the spoken words and language."""

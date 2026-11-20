@@ -13,6 +13,7 @@ from .ranker import rank_and_rename_clips
 from .renderer import render_clip
 from .ai import generate_clip_metadata
 from .thumbnail import create_thumbnail, extract_poster_frame
+from .games import detect as detect_game
 
 def get_next_session_dir() -> Path:
     """Finds next available session directory e.g. data/out/session_1."""
@@ -45,6 +46,7 @@ def process_video_pipeline(
     length_range: Optional[str] = None,
     chat_events: Optional[List[Dict[str, Any]]] = None,
     progress_callback: Optional[Any] = None,
+    preset: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Executes full pipeline:
@@ -91,6 +93,11 @@ def process_video_pipeline(
     source_video = media["file_path"]
     duration = media["duration"]
 
+    # Detect game if present and set preset
+    detected_game, _ = detect_game(media.get("title", ""), source)
+    if preset is None and detected_game:
+        preset = "gta6" if detected_game == "Grand Theft Auto VI" else "gaming"
+
     report_progress("transcribe", 25, "Transcribing audio locally with faster-whisper...")
 
     # 2. Transcribe
@@ -107,6 +114,7 @@ def process_video_pipeline(
         target_count=top_n,
         min_clip_len=min_len,
         max_clip_len=max_len,
+        preset=preset,
     )
 
     report_progress("rank", 70, "Cutting candidate clips with FFmpeg...")
@@ -123,7 +131,7 @@ def process_video_pipeline(
         success = cut_clip(source_video, out_path, cand.start, cand.end)
         if success:
             # Generate unique AI metadata (with safe timeout and fallback)
-            meta = generate_clip_metadata(cand.transcript_text, idx, used_titles=used_titles)
+            meta = generate_clip_metadata(cand.transcript_text, idx, used_titles=used_titles, game=detected_game)
             raw_clips.append({
                 "id": f"clip_{idx}",
                 "file_path": str(out_path),
