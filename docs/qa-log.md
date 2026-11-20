@@ -140,3 +140,25 @@ tests/test_stage7_youtube.py::test_auth_status_check PASSED              [100%]
 ============================================================
 ```
 - **Exit Code**: 0 (Clean pass, 0 failures, 0 skipped)
+
+### Step 4: Real Pipeline Proof
+- **Target URL Status**: `https://youtu.be/CsWOUBuokjo` is unavailable/deleted on YouTube.
+- **Verification Run**: **local file, does NOT verify YouTube download**
+- **Source**: `data/in/session_1_source.mp4` (Duration: 3029.23s)
+- **Output Clip**: `data/out/session_1/01_wait_what_did_you_just_say.mp4`
+- **ffprobe Results**:
+  - Resolution: `1080x1920` (9:16 vertical)
+  - Duration: `16.92s`
+  - Video Codec: `h264` (High Profile)
+  - Audio Codec: `aac` (LC)
+  - Bitrate: `1464 kbps`
+- **Viewed Frames**:
+  - Frame 1 (t=2.0s): Extracted to `scratch/frame_2s.jpg`. Mean BGR: `[24.36, 25.51, 29.73]`, Std: `[45.24, 47.01, 52.08]`. Real podcast conversational scene showing speaker speaking with blurred vertical background fill. `is_black=False`.
+  - Frame 2 (t=8.0s): Extracted to `scratch/frame_8s.jpg`. Mean BGR: `[25.06, 25.22, 27.53]`, Std: `[47.46, 48.38, 51.59]`. Speaker in mid-sentence with animated word-highlighted subtitle text rendered clearly in lower third. `is_black=False`.
+- **Word-Level Caption Synchronization**:
+  - Sample 1 (t=357.08s): Spoken word `"Family?"` (start: 357.08s, end: 357.62s)
+  - Sample 2 (t=359.36s): Spoken word `"shit!"` (start: 359.36s, end: 359.78s)
+  - Sample 3 (t=361.04s): Spoken word `"nice"` (start: 361.04s, end: 361.44s)
+- **Server Log Review**:
+  - Zero fatal server errors.
+  - Startup health logged cleanly: `[Startup Health] Status: OK (Healthy: True)`.
