@@ -96,6 +96,10 @@ class Settings:
         self.spike_min_msgs: int = int(os.getenv("SPIKE_MIN_MSGS", "120"))
         self.auto_upload: bool = os.getenv("AUTO_UPLOAD", "false").lower() in ("true", "1", "yes")
         self.daily_upload_cap: int = int(os.getenv("DAILY_UPLOAD_CAP", "5"))
+        self.ytdlp_cookie_browser: str = os.getenv("YTDLP_COOKIE_BROWSER", "").strip()
+        self.ytdlp_sleep_interval: int = int(os.getenv("YTDLP_SLEEP_INTERVAL", "0"))
+        self.ytdlp_player_client: str = os.getenv("YTDLP_PLAYER_CLIENT", "web,android").strip()
+        self.ytdlp_js_runtime: str = os.getenv("YTDLP_JS_RUNTIME", "node").strip()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -114,6 +118,10 @@ class Settings:
             "spike_min_msgs": self.spike_min_msgs,
             "auto_upload": self.auto_upload,
             "daily_upload_cap": self.daily_upload_cap,
+            "ytdlp_cookie_browser": self.ytdlp_cookie_browser,
+            "ytdlp_sleep_interval": self.ytdlp_sleep_interval,
+            "ytdlp_player_client": self.ytdlp_player_client,
+            "ytdlp_js_runtime": self.ytdlp_js_runtime,
             "ffmpeg_available": bool(shutil.which(find_ffmpeg()) or shutil.which("ffmpeg")),
         }
 
@@ -143,6 +151,10 @@ class Settings:
             "youtube_client_id": "YOUTUBE_CLIENT_ID",
             "youtube_client_secret": "YOUTUBE_CLIENT_SECRET",
             "youtube_channel_name": "YOUTUBE_CHANNEL_NAME",
+            "ytdlp_cookie_browser": "YTDLP_COOKIE_BROWSER",
+            "ytdlp_sleep_interval": "YTDLP_SLEEP_INTERVAL",
+            "ytdlp_player_client": "YTDLP_PLAYER_CLIENT",
+            "ytdlp_js_runtime": "YTDLP_JS_RUNTIME",
             "record_height": "RECORD_HEIGHT",
             "spike_min_msgs": "SPIKE_MIN_MSGS",
             "auto_upload": "AUTO_UPLOAD",

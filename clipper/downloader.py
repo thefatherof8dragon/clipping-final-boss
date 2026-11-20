@@ -5,7 +5,7 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, Any, Optional
-from .config import DATA_IN_DIR, find_ffmpeg, find_ffprobe
+from .config import DATA_IN_DIR, find_ffmpeg, find_ffprobe, settings
 
 try:
     import yt_dlp
@@ -95,6 +95,26 @@ def download_or_load(source: str, session_id: str) -> Dict[str, Any]:
         }],
     }
 
+    # Automatically enable Node JS runtime for YouTube challenges
+    js_runtime = getattr(settings, "ytdlp_js_runtime", "node")
+    if js_runtime and shutil.which(js_runtime):
+        ydl_opts["js_runtimes"] = {js_runtime: {}}
+
+    # Optional browser cookies configured in settings
+    cookie_browser = getattr(settings, "ytdlp_cookie_browser", "")
+    if cookie_browser:
+        ydl_opts["cookiesfrombrowser"] = (cookie_browser,)
+
+    # Optional sleep interval between requests
+    sleep_interval = getattr(settings, "ytdlp_sleep_interval", 0)
+    if sleep_interval > 0:
+        ydl_opts["sleep_interval_requests"] = sleep_interval
+
+    # Optional player client configuration
+    player_client = getattr(settings, "ytdlp_player_client", "web,android")
+    if player_client:
+        ydl_opts["extractor_args"] = {"youtube": {"player_client": [c.strip() for c in player_client.split(",")]}}
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             meta = ydl.extract_info(src_clean, download=True)
@@ -106,12 +126,22 @@ def download_or_load(source: str, session_id: str) -> Dict[str, Any]:
             thumbnail = meta.get("thumbnail", "")
     except Exception as e:
         err_str = str(e)
+        if "429" in err_str or "too many requests" in err_str.lower():
+            raise RuntimeError(
+                f"YouTube HTTP 429 Too Many Requests: YouTube is rate-limiting this IP: wait or enable browser cookies in Settings. (yt-dlp: {err_str})"
+            ) from e
         if "bot" in err_str.lower() or "confirm you’re not a bot" in err_str.lower():
-            raise RuntimeError("YouTube anti-bot verification required. Try again or provide cookies.") from e
+            raise RuntimeError(
+                f"YouTube anti-bot verification required: try again or enable browser cookies in Settings. (yt-dlp: {err_str})"
+            ) from e
         if "unavailable" in err_str.lower():
-            raise RuntimeError("YouTube video is unavailable or private. Verify URL and case-sensitive ID.") from e
+            raise RuntimeError(
+                f"YouTube video is unavailable or private: verify video URL and case-sensitive ID. (yt-dlp: {err_str})"
+            ) from e
         if "403" in err_str:
-            raise RuntimeError("YouTube HTTP 403 Forbidden: Request was blocked by YouTube.") from e
+            raise RuntimeError(
+                f"YouTube HTTP 403 Forbidden: Request was blocked by YouTube. (yt-dlp: {err_str})"
+            ) from e
         raise RuntimeError(f"Download failed: {err_str}") from e
 
     # Ensure dest_path was produced
