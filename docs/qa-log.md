@@ -382,3 +382,63 @@ Progress:      25%
 - **Action**: Safely moved all inactive React/Tailwind artifacts (`package.json`, `components.json`, `tailwind.config.js`, `tsconfig.json`, `components/`, `lib/`) into `archive/react_redesign/`.
 - **Active UI Standard**: `clipper/web/static/` remains the canonical, zero-build, zero-npm desktop application frontend served directly by FastAPI at `http://127.0.0.1:8000`.
 - **Result**: Root directory free of contradictory build configs.
+
+### Step 2: Gaming & GTA VI Launch Presets
+- **Action**:
+  - Ported game detection dictionary (`GAMES`) from PeakCut (MIT) into `clipper/games.py` covering 23 recognized games including Grand Theft Auto VI, Grand Theft Auto V, Fortnite, Minecraft, Valorant, Elden Ring, and Cyberpunk 2077.
+  - Added `GAMING_KEYWORDS` and `GTA6_KEYWORDS` dictionaries to `clipper/candidate_picker.py`.
+  - Added `preset: Optional[str] = None` flag to `calculate_candidate_scores` and `find_candidate_moments`, prioritizing high-impact action (clutch, headshot, boss, fail, hype, Vice City, heist).
+  - Integrated automatic game tagging into `clipper/ai.py` (e.g. `#GTA6`, `#ViceCity`, `#RockstarGames`) without losing user tags.
+  - Implemented unit test suite in `tests/test_gaming_presets.py` covering alias detection, rule prompts, preset score boosts, and deduplicated hashtag injection.
+- **Evidence**: `tests/test_gaming_presets.py` passed 5/5 tests in 0.40s.
+- **Commit**: `4694ed3` (`feat: gaming and gta6 launch presets in candidate picker`).
+
+### Step 3: Multi-Platform Social Export Packaging
+- **Action**:
+  - Implemented `GET /api/clips/{clip_id}/export/{platform}` and `POST /api/clips/{clip_id}/export/{platform}` in `clipper/api.py`.
+  - Supported platforms:
+    - `youtube_shorts`: 100-character title with `#shorts`, full description with hashtags, and clean comma-separated tag strings.
+    - `instagram_reels`: Spaced hook structure (`hook` + `\n.\n` + tags) including `#reels` and `#reelsinstagram`, clamped to 2,200 characters.
+    - `tiktok`: High-CTR format with `#fyp` and `#viral`, clamped to 2,200 characters.
+  - Wired quick-copy buttons (`📱 TikTok`, `📸 Reels`, `▶️ Shorts`) on every clip card in `clipper/web/static/app.js` with toast confirmation.
+  - Created unit test suite in `tests/test_social_export.py` covering all three platforms, character limits, tag formatting, and HTTP 400/404 error handling.
+- **Evidence**: `tests/test_social_export.py` passed 5/5 tests in 6.63s.
+- **Commit**: `2ca44eb` (`feat: multi-platform social export packaging`).
+
+### Step 4: Documentation and Release Files
+- **Action**:
+  - Updated `README.md` with:
+    - 5-step quickstart.
+    - Windows MAX_PATH (260 char limit) warning and explanation of `%TEMP%\clp_tmp` atomic render staging.
+    - Zero-key local mode vs optional cloud keys.
+    - Multi-platform social export details.
+    - Creator permission requirements and YouTube daily quota notes (`DAILY_UPLOAD_CAP=6`).
+    - PeakCut attribution with link (MIT License).
+  - Updated `LICENSE` preserving PeakCut copyright notice (2024 Haziq Ahmed Qasmi) and adding Clipper contributors.
+  - Authored comprehensive verification matrix in `docs/feature-checklist.md` mapping all 36 items across sections A–G to implementation files and evidence.
+- **Commit**: `444ebbc` (`docs: update readme, license, and feature checklist`).
+
+### Step 5: Clean Verification Run & Localhost Server
+- **Action**:
+  - Ran full unified test suite via `python tests/run.py`.
+  - Verified `/healthz` on running FastAPI server at `http://127.0.0.1:8000`.
+  - Verified browser webview loads `http://127.0.0.1:8000` with clean hero section, status pill ("System: Healthy"), and navigation tabs.
+- **Evidence**:
+  - Test suite: **52 passed in 238.08s (0:03:58)** with exit code 0.
+  - Health check:
+    ```json
+    {
+      "status": "ok",
+      "healthy": true,
+      "app_version": "1.0.0",
+      "python_version": "3.14.4",
+      "ffmpeg": {"found": true, "version": "9.0.2-full_build-www.gyan.dev"},
+      "ffprobe": {"found": true, "version": "9.0.2-full_build-www.gyan.dev"},
+      "yt_dlp_version": "2026.10.26",
+      "js_runtime": {"found": true, "runtime": "node", "version": "v24.15.0"},
+      "data_folder": {"writable": true, "free_space_gb": 157.93},
+      "project_path": {"length": 47, "warning": ""},
+      "failing": []
+    }
+    ```
+  - Browser host facts: visited origin `http://127.0.0.1:8000`, 0 blocked origins, screenshot verified.
