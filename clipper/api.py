@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from .config import DATA_OUT_DIR, settings
+from .config import DATA_DIR, DATA_OUT_DIR, settings
 from .session import (
     process_video_pipeline,
     load_session_data,
