@@ -262,3 +262,50 @@ Progress:      25%
        - Caption words (Hinglish): `[51.80s - 52.10s]: "Savalk"`, `[52.10s - 52.40s]: "jabab"`, `[52.40s - 52.52s]: "ka"`, `[52.52s - 52.74s]: "dhoar"`, `[52.74s - 53.12s]: "challahi"`, `[53.12s - 53.58s]: "dahata"` (*"Sawaal jawaab ka daur chal hi raha tha"*).
   - Glyph Rendering Check: Verified no missing-glyph tofu/boxes (`[?]`); ASS Arial/Inter fallback cleanly renders all alphanumeric and Devanagari romanized characters.
 - **Server Logs**: Monitored `task-934.log` throughout run; zero fatal exceptions or unhandled tracebacks.
+
+### Step 4: Real Server Restart & Job Persistence Test
+- **Execution**:
+  - Spawned long asynchronous background clipping job `job_4b7670b2de7d` targeting 15-minute video.
+  - Progress reached: `35%` (`stage: transcribing`).
+  - Active server process `PID 5312` was killed via `taskkill /F /PID 5312`.
+  - Server restarted (`task-964`).
+- **Disk State (`data/jobs.json`) Before Kill**:
+```json
+{
+  "job_4b7670b2de7d": {
+    "id": "job_4b7670b2de7d",
+    "type": "clip_generation",
+    "status": "running",
+    "stage": "transcribing",
+    "progress": 35,
+    "message": "Transcribing long 15-minute video speech...",
+    "error": null,
+    "result": null,
+    "metadata": {
+      "url": "https://www.youtube.com/watch?v=UF8uR6Z6KLc",
+      "top_n": 3
+    }
+  }
+}
+```
+- **Disk State (`data/jobs.json`) After Restart**:
+```json
+{
+  "job_4b7670b2de7d": {
+    "id": "job_4b7670b2de7d",
+    "type": "clip_generation",
+    "status": "failed",
+    "stage": "transcribing",
+    "progress": 35,
+    "message": "Failed: interrupted by restart",
+    "error": "interrupted by restart",
+    "result": null,
+    "metadata": {
+      "url": "https://www.youtube.com/watch?v=UF8uR6Z6KLc",
+      "top_n": 3
+    }
+  }
+}
+```
+- **Integrity Verification**: Job was reliably recovered from disk without duplicate entries or silent drop. Status reconciled to `failed` with explanation `"interrupted by restart"`.
+- **Live Stream Recording Restart Mid-Recording**: **unverified** (streamlink dependency is not installed; simulated spike cutting is verified in test suite).
