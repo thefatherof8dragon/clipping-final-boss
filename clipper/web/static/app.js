@@ -539,6 +539,17 @@ function createVideoCardElement(clip, rank) {
           📅 Schedule
         </button>
       </div>
+      <div class="card-social-export-row" style="display: flex; gap: 6px; margin-top: 8px;">
+        <button type="button" class="btn btn-ghost btn-xs btn-export-tiktok" title="Copy TikTok package (title, caption, tags)">
+          📱 TikTok
+        </button>
+        <button type="button" class="btn btn-ghost btn-xs btn-export-ig" title="Copy Instagram Reels package (hook, spacing, tags)">
+          📸 Reels
+        </button>
+        <button type="button" class="btn btn-ghost btn-xs btn-export-yt" title="Copy YouTube Shorts package (title with #shorts, description, tags)">
+          ▶️ Shorts
+        </button>
+      </div>
     </div>
   `;
 
@@ -605,6 +616,49 @@ function createVideoCardElement(clip, rank) {
   card.querySelector(".btn-card-schedule").addEventListener("click", (e) => {
     e.stopPropagation();
     scheduleSingleClip(clip);
+  });
+
+  // Quick social export package copy handlers
+  const copySocialPackage = async (platform, label) => {
+    try {
+      const sessId = currentSession?.session_id || "session_1";
+      const compositeId = clip.id.startsWith("clip_") ? `${sessId}_${clip.id}` : clip.id;
+      let res = await fetch(`/api/clips/${compositeId}/export/${platform}`);
+      if (!res.ok) {
+        res = await fetch(`/api/clips/${clip.id}/export/${platform}`);
+      }
+      if (!res.ok) throw new Error(`Export failed (${res.status})`);
+      const data = await res.json();
+      const textToCopy = data.formatted_text || "";
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = textToCopy;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      showToast(`Copied ${label} package to clipboard!`, "success");
+    } catch (err) {
+      showToast(`Could not copy ${label} package: ${err.message}`, "error");
+    }
+  };
+
+  card.querySelector(".btn-export-tiktok")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    copySocialPackage("tiktok", "TikTok");
+  });
+
+  card.querySelector(".btn-export-ig")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    copySocialPackage("instagram_reels", "Instagram Reels");
+  });
+
+  card.querySelector(".btn-export-yt")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    copySocialPackage("youtube_shorts", "YouTube Shorts");
   });
 
   return card;

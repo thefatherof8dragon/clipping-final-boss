@@ -590,6 +590,100 @@ def api_schedule_clip(clip_id: str, req: ScheduleRequest):
     )
     return result
 
+@app.get("/api/clips/{clip_id}/export/{platform}")
+@app.post("/api/clips/{clip_id}/export/{platform}")
+def api_export_clip_package(clip_id: str, platform: str):
+    """Generates tailored multi-platform social export metadata package.
+    Supported platforms: youtube_shorts, instagram_reels, tiktok.
+    """
+    s_dir, c_id = parse_clip_composite_id(clip_id)
+    s_data = load_session_data(s_dir)
+    if not s_data:
+        raise HTTPException(status_code=404, detail="Session not found or session.json missing")
+    clip = next((c for c in s_data.get("clips", []) if c["id"] == c_id), None)
+    if not clip:
+        raise HTTPException(status_code=404, detail="Clip not found")
+
+    norm_platform = platform.lower().strip()
+    raw_title = str(clip.get("title") or "Viral Highlight").strip()
+    raw_caption = str(clip.get("caption") or "").strip()
+    hashtags = list(clip.get("hashtags") or ["#shorts", "#viral"])
+    hook = str(clip.get("hook_text") or raw_title).strip()
+    video_path = clip.get("rendered_path") or clip.get("file_path") or ""
+
+    if norm_platform in ("youtube_shorts", "youtube", "shorts"):
+        yt_title = raw_title
+        if "#shorts" not in yt_title.lower() and len(yt_title) <= 92:
+            yt_title = f"{yt_title} #shorts"
+        yt_title = yt_title[:100]
+
+        yt_desc = f"{raw_caption}\n\n" + " ".join(hashtags)
+        tag_list = [h.lstrip("#") for h in hashtags if h.lstrip("#")]
+        tags_str = ", ".join(tag_list)
+        formatted = f"{yt_title}\n\n{yt_desc}"
+
+        return {
+            "platform": "youtube_shorts",
+            "title": yt_title,
+            "description": yt_desc,
+            "tags": tag_list,
+            "tags_string": tags_str,
+            "char_count": len(yt_desc),
+            "formatted_text": formatted,
+            "video_path": video_path,
+        }
+
+    elif norm_platform in ("instagram_reels", "instagram", "reels"):
+        ig_tags = list(hashtags)
+        existing_lower = {t.lower() for t in ig_tags}
+        for default_ig in ["#reels", "#reelsinstagram", "#viralreels"]:
+            if default_ig not in existing_lower:
+                ig_tags.append(default_ig)
+
+        tag_cloud = " ".join(ig_tags[:25])
+        formatted = f"{hook}\n\n{raw_caption}\n\n.\n.\n{tag_cloud}".strip()
+        if len(formatted) > 2200:
+            formatted = formatted[:2190] + "..."
+
+        return {
+            "platform": "instagram_reels",
+            "hook": hook,
+            "caption": raw_caption,
+            "hashtags": ig_tags[:25],
+            "char_count": len(formatted),
+            "formatted_text": formatted,
+            "video_path": video_path,
+        }
+
+    elif norm_platform in ("tiktok", "tt"):
+        tt_tags = list(hashtags)
+        existing_lower = {t.lower() for t in tt_tags}
+        for default_tt in ["#fyp", "#viral", "#foryou"]:
+            if default_tt not in existing_lower:
+                tt_tags.insert(0, default_tt)
+
+        tag_cloud = " ".join(tt_tags[:6])
+        base_text = f"{raw_title} - {raw_caption}".strip(" -") if raw_caption else raw_title
+        formatted = f"{base_text} {tag_cloud}".strip()
+        if len(formatted) > 2200:
+            formatted = formatted[:2190] + "..."
+
+        return {
+            "platform": "tiktok",
+            "title": raw_title,
+            "caption": raw_caption,
+            "hashtags": tt_tags[:6],
+            "char_count": len(formatted),
+            "formatted_text": formatted,
+            "video_path": video_path,
+        }
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported platform '{platform}'. Choose from: youtube_shorts, instagram_reels, tiktok",
+        )
+
 # ==================== STREAMERS ====================
 @app.get("/api/streamers")
 def api_get_streamers():
