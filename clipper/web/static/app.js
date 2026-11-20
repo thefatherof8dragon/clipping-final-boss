@@ -1611,15 +1611,10 @@ async function exportClipMp4() {
 }
 
 // ==================== STREAMERS & REAL-TIME MONITORING (PROBLEM 3 & C FIX) ====================
-let streamChatHistory = [
-  { time: "-5m", rate: 14 },
-  { time: "-4m", rate: 19 },
-  { time: "-3m", rate: 16 },
-  { time: "-2m", rate: 28 },
-  { time: "-1m", rate: 22 },
-  { time: "Now", rate: 25 }
-];
+let streamChatHistory = [];
 let isWatchingLive = false;
+let watchStartTime = null;
+let watchElapsedInterval = null;
 
 function formatRelativeTime(ts) {
   if (!ts) return "Never";
@@ -1747,7 +1742,7 @@ function initStreamers() {
     pinForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const url = document.getElementById("streamer-url").value.trim();
-      const name = document.getElementById("streamer-name").value.trim() || url;
+      const name = document.getElementById("streamer-name").value.trim();
       const platform = document.getElementById("streamer-platform")?.value || "auto";
       if (!url) return;
 
@@ -1758,9 +1753,10 @@ function initStreamers() {
           body: JSON.stringify({ name, url, platform }),
         });
         if (resp.ok) {
+          const created = await resp.json();
           document.getElementById("streamer-url").value = "";
           document.getElementById("streamer-name").value = "";
-          showToast(`Pinned streamer "${name}" added!`, "success");
+          showToast(`Pinned streamer "${created.name || 'Streamer'}" added!`, "success");
           fetchStreamers();
         } else {
           showToast("Failed to pin streamer", "error");
@@ -1769,6 +1765,28 @@ function initStreamers() {
         showToast("Error pinning streamer", "error");
       }
     });
+  }
+
+  function startWatchTimer() {
+    if (watchElapsedInterval) clearInterval(watchElapsedInterval);
+    watchStartTime = Date.now();
+    watchElapsedInterval = setInterval(() => {
+      if (!isWatchingLive || !activeStreamer) return;
+      const elapsedSec = Math.floor((Date.now() - watchStartTime) / 1000);
+      const h = String(Math.floor(elapsedSec / 3600)).padStart(2, "0");
+      const m = String(Math.floor((elapsedSec % 3600) / 60)).padStart(2, "0");
+      const s = String(elapsedSec % 60).padStart(2, "0");
+      const el = document.getElementById("stat-elapsed");
+      if (el) el.innerText = `${h}:${m}:${s}`;
+    }, 1000);
+  }
+
+  function stopWatchTimer() {
+    if (watchElapsedInterval) clearInterval(watchElapsedInterval);
+    watchElapsedInterval = null;
+    watchStartTime = null;
+    const el = document.getElementById("stat-elapsed");
+    if (el) el.innerText = "00:00:00";
   }
 
   // Check Single Streamer Now
@@ -1817,25 +1835,44 @@ function initStreamers() {
   // Toggle Watch Live Button
   const watchBtn = document.getElementById("btn-toggle-watch");
   if (watchBtn) {
-    watchBtn.addEventListener("click", () => {
-      isWatchingLive = !isWatchingLive;
-      if (isWatchingLive) {
-        watchBtn.innerText = "⏹ Stop Watching";
-        watchBtn.className = "btn btn-ghost";
-        showToast("Live watcher started. Monitoring chat velocity...", "info");
-        renderSpikeChart(streamChatHistory, false);
-      } else {
-        watchBtn.innerText = "Start Watching";
-        watchBtn.className = "btn btn-secondary";
-        showToast("Live watcher paused.", "info");
+    watchBtn.addEventListener("click", async () => {
+      if (!activeStreamer) return;
+      if (!activeStreamer.is_live) {
+        showToast("Cannot watch an offline streamer", "warning");
+        return;
+      }
+      try {
+        const resp = await fetch(`/api/streamers/${activeStreamer.id}/toggle-watch`, { method: "POST" });
+        if (resp.ok) {
+          const res = await resp.json();
+          isWatchingLive = Boolean(res.is_watching);
+          activeStreamer.is_watching = isWatchingLive;
+          if (isWatchingLive) {
+            startWatchTimer();
+            showToast("Connected to live stream. Chat & buffer active.", "info");
+          } else {
+            stopWatchTimer();
+            showToast("Stopped watching live stream.", "info");
+          }
+          updateStreamerLiveUI(activeStreamer);
+        } else {
+          const errData = await resp.json().catch(() => ({}));
+          showToast(errData.detail || "Failed to toggle watch state", "error");
+        }
+      } catch (e) {
+        showToast("Error connecting to streamer", "error");
       }
     });
   }
 
-  // Interactive Test Spike Button (Problem C.3)
+  // Interactive Test Spike Button (DEV_MODE only)
   const simulateBtn = document.getElementById("btn-simulate-spike");
   if (simulateBtn) {
     simulateBtn.addEventListener("click", () => {
+      if (!activeStreamer || !activeStreamer.is_live) {
+        showToast("Test Spike is disabled when streamer is offline", "warning");
+        return;
+      }
       const now = new Date();
       const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' : ''}${now.getMinutes()}:${now.getSeconds() < 10 ? '0' : ''}${now.getSeconds()}`;
       const spikeRate = Math.floor(Math.random() * 40) + 165; // 165 - 205 msg/s
@@ -1906,23 +1943,28 @@ async function fetchStreamers() {
       const item = document.createElement("div");
       item.className = `streamer-item ${activeStreamer && activeStreamer.id === s.id ? "active" : ""}`;
       
-      const viewersBadge = s.is_live && s.viewer_count
+      const displayName = (s.name && !s.name.startsWith("http")) ? s.name : (s.url ? s.url.replace(/\/$/, "").split("/").pop().replace(/^@/, "") : "Streamer");
+      const isLive = Boolean(s.is_live);
+      const cacheExpired = s.last_checked && (Date.now() - (s.last_checked < 1e11 ? s.last_checked * 1000 : s.last_checked) > 60000);
+      const trulyLive = isLive && !cacheExpired;
+
+      const viewersBadge = trulyLive && s.viewer_count
         ? `<span class="badge-viewers">👥 ${s.viewer_count.toLocaleString()}</span>`
         : "";
 
       const avatarMarkup = s.avatar_url
-        ? `<div class="streamer-avatar-wrapper small ${s.is_live ? "live-ring" : ""}"><img src="${s.avatar_url}" class="streamer-avatar-img" alt="${s.name}" onerror="this.style.display='none'"></div>`
-        : `<div class="streamer-avatar-wrapper small ${s.is_live ? "live-ring" : ""}"><div class="streamer-avatar-fallback">${(s.name || "S").charAt(0).toUpperCase()}</div></div>`;
+        ? `<div class="streamer-avatar-wrapper small ${trulyLive ? "live-ring" : ""}"><img src="${s.avatar_url}" class="streamer-avatar-img" alt="${displayName}" onerror="this.style.display='none'"></div>`
+        : `<div class="streamer-avatar-wrapper small ${trulyLive ? "live-ring" : ""}"><div class="streamer-avatar-fallback">${(displayName || "S").charAt(0).toUpperCase()}</div></div>`;
 
       item.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px;">
           ${avatarMarkup}
           <div>
-            <strong>${s.name}</strong>
+            <strong>${displayName}</strong>
             <div style="margin-top:2px;"><span class="platform-badge ${s.platform}">${s.platform}</span>${viewersBadge}</div>
           </div>
         </div>
-        <span class="status-badge ${s.is_live ? "live" : "offline"}">${s.is_live ? "LIVE" : "OFFLINE"}</span>
+        <span class="status-badge ${trulyLive ? "live" : "offline"}">${trulyLive ? "LIVE" : "OFFLINE"}</span>
       `;
       item.addEventListener("click", () => selectStreamer(s));
       list.appendChild(item);
@@ -1947,15 +1989,20 @@ function selectStreamer(s) {
 }
 
 function updateStreamerLiveUI(s) {
+  const displayName = (s.name && !s.name.startsWith("http")) ? s.name : (s.url ? s.url.replace(/\/$/, "").split("/").pop().replace(/^@/, "") : "Streamer");
   const nameEl = document.getElementById("live-streamer-name");
-  if (nameEl) nameEl.innerText = s.name;
+  if (nameEl) nameEl.innerText = displayName;
+
+  const isLive = Boolean(s.is_live);
+  const cacheExpired = s.last_checked && (Date.now() - (s.last_checked < 1e11 ? s.last_checked * 1000 : s.last_checked) > 60000);
+  const trulyLive = isLive && !cacheExpired;
 
   // Avatar
   const avatarImg = document.getElementById("live-streamer-avatar");
   const avatarFallback = document.getElementById("live-streamer-avatar-fallback");
   const avatarWrap = document.getElementById("live-streamer-avatar-wrap");
   if (avatarWrap) {
-    if (s.is_live) avatarWrap.classList.add("live-ring");
+    if (trulyLive) avatarWrap.classList.add("live-ring");
     else avatarWrap.classList.remove("live-ring");
   }
   if (avatarImg && avatarFallback) {
@@ -1966,19 +2013,11 @@ function updateStreamerLiveUI(s) {
     } else {
       avatarImg.style.display = "none";
       avatarFallback.style.display = "flex";
-      avatarFallback.innerText = (s.name || "S").charAt(0).toUpperCase();
+      avatarFallback.innerText = (displayName || "S").charAt(0).toUpperCase();
     }
   }
 
-  // Chat status
-  const chatBadge = document.getElementById("live-chat-badge");
-  if (chatBadge) {
-    const isLive = Boolean(s.is_live);
-    chatBadge.innerText = isLive ? "Chat: Connected" : "Chat: Disconnected";
-    if (isLive) chatBadge.classList.add("connected");
-    else chatBadge.classList.remove("connected");
-  }
-
+  // Badges
   const platBadge = document.getElementById("live-platform-badge");
   if (platBadge) {
     platBadge.className = `platform-badge ${s.platform}`;
@@ -1987,50 +2026,128 @@ function updateStreamerLiveUI(s) {
 
   const statusBadge = document.getElementById("live-status-badge");
   if (statusBadge) {
-    statusBadge.className = `status-badge ${s.is_live ? "live" : "offline"}`;
-    statusBadge.innerText = s.is_live ? "LIVE" : "OFFLINE";
+    statusBadge.className = `status-badge ${trulyLive ? "live" : "offline"}`;
+    statusBadge.innerText = trulyLive ? "LIVE" : "OFFLINE";
   }
 
+  const viewersEl = document.getElementById("live-viewers-badge");
+  if (viewersEl) {
+    if (trulyLive && (s.viewer_count || s.viewers)) {
+      viewersEl.classList.remove("hidden");
+      viewersEl.innerText = `👥 ${Number(s.viewer_count || s.viewers).toLocaleString()} viewers`;
+    } else {
+      viewersEl.classList.add("hidden");
+    }
+  }
+
+  // Watching State
+  const isWatching = trulyLive && Boolean(s.is_watching || isWatchingLive);
+  const watchBtn = document.getElementById("btn-toggle-watch");
+  if (watchBtn) {
+    if (!trulyLive) {
+      watchBtn.disabled = true;
+      watchBtn.innerText = "Start Watching";
+      watchBtn.title = "Streamer is offline";
+      watchBtn.className = "btn btn-secondary disabled";
+    } else if (isWatching) {
+      watchBtn.disabled = false;
+      watchBtn.innerText = "⏹ Stop Watching";
+      watchBtn.title = "Stop watching live broadcast";
+      watchBtn.className = "btn btn-danger";
+    } else {
+      watchBtn.disabled = false;
+      watchBtn.innerText = "Start Watching";
+      watchBtn.title = "";
+      watchBtn.className = "btn btn-primary";
+    }
+  }
+
+  // Test Spike Button (DEV_MODE only)
+  const devMode = Boolean(window.DEV_MODE || localStorage.getItem("DEV_MODE") === "1" || new URLSearchParams(window.location.search).get("dev") === "1");
+  const spikeBtn = document.getElementById("btn-simulate-spike");
+  if (spikeBtn) {
+    spikeBtn.innerText = "Test Spike (SIMULATED, creates a test clip)";
+    spikeBtn.title = "SIMULATED, creates a test clip";
+    if (devMode && trulyLive) {
+      spikeBtn.classList.remove("hidden");
+      spikeBtn.disabled = false;
+    } else {
+      spikeBtn.classList.add("hidden");
+      spikeBtn.disabled = true;
+    }
+  }
+
+  // Diagnostics Box
   const titleEl = document.getElementById("live-stream-title");
   if (titleEl) {
-    titleEl.innerText = s.stream_title || (s.is_live ? "Live Broadcast in Progress" : "No active broadcast");
-  }
-
-  const viewersEl = document.getElementById("live-viewers-badge") || document.getElementById("live-stream-viewers");
-  if (viewersEl) {
-    viewersEl.innerText = s.is_live && s.viewer_count
-      ? `${s.viewer_count.toLocaleString()} viewers watching now`
-      : "Channel is currently offline";
+    titleEl.innerText = trulyLive ? (s.stream_title || s.title || "Live Broadcast in Progress") : "Offline";
   }
 
   const reasonEl = document.getElementById("live-stream-reason");
   if (reasonEl) {
-    reasonEl.innerText = s.last_error || (s.is_live ? "Broadcasting live" : (s.status_reason || "Channel is offline"));
+    if (trulyLive) {
+      reasonEl.innerText = `Broadcasting now (${(s.viewer_count || s.viewers || 0).toLocaleString()} viewers)`;
+    } else {
+      const lastLive = s.last_live_str || (s.last_live ? formatRelativeTime(s.last_live) : "never");
+      reasonEl.innerText = `Offline. Last live: ${lastLive}`;
+    }
     reasonEl.classList.remove("hidden");
   }
 
-  // Signal Health Chips (PeakCut rolling buffer & multi-signal health)
-  const health = s.signal_health || {};
-  const chatChip = document.getElementById("chip-signal-chat");
-  const audioChip = document.getElementById("chip-signal-audio");
-  const bufChip = document.getElementById("chip-signal-buffer");
-  const lastClipChip = document.getElementById("chip-last-clip");
+  // Signal Health Chips: "Chat: Connected", "Audio: Active", "Buffer: Ready" only while watching
+  const signalHealth = document.getElementById("streamer-signal-health");
+  if (signalHealth) {
+    if (isWatching) {
+      signalHealth.classList.remove("hidden");
+      const chatChip = document.getElementById("chip-signal-chat");
+      const audioChip = document.getElementById("chip-signal-audio");
+      const bufChip = document.getElementById("chip-signal-buffer");
+      const lastClipChip = document.getElementById("chip-last-clip");
+      if (chatChip) {
+        chatChip.className = "signal-chip active";
+        chatChip.innerText = "Chat: Connected";
+      }
+      if (audioChip) {
+        audioChip.className = "signal-chip active";
+        audioChip.innerText = "Audio: Active";
+      }
+      if (bufChip) {
+        bufChip.className = "signal-chip active";
+        bufChip.innerText = "Buffer: Ready (10 min)";
+      }
+      if (lastClipChip) {
+        lastClipChip.innerText = `Last Clip: ${s.last_clip_time || 'None'}`;
+      }
+    } else {
+      signalHealth.classList.add("hidden");
+    }
+  }
 
-  if (chatChip) {
-    const isFallback = (health.chat || "").includes("fallback");
-    chatChip.className = `signal-chip ${isFallback ? "fallback" : (health.chat === "connected" ? "active" : "")}`;
-    chatChip.innerText = `Chat: ${health.chat || (s.is_live ? "Connected" : "Disconnected")}`;
+  // Stats bar & Chart
+  const statsBar = document.querySelector(".live-stats-bar");
+  if (statsBar) {
+    if (trulyLive) {
+      statsBar.classList.remove("hidden");
+      if (!isWatching) {
+        const elElapsed = document.getElementById("stat-elapsed");
+        const elRate = document.getElementById("stat-chat-rate");
+        if (elElapsed) elElapsed.innerText = "00:00:00";
+        if (elRate) elRate.innerText = "0 msg/s";
+      }
+    } else {
+      statsBar.classList.add("hidden");
+    }
   }
-  if (audioChip) {
-    audioChip.className = `signal-chip ${health.audio && health.audio.includes("active") ? "active" : ""}`;
-    audioChip.innerText = `Audio: ${health.audio || (s.is_live ? "Active" : "Waiting")}`;
-  }
-  if (bufChip) {
-    bufChip.className = `signal-chip ${(health.buffer_sec || 0) > 0 ? "active" : "fallback"}`;
-    bufChip.innerText = `Buffer: ${health.buffer_sec ? health.buffer_sec + 's (' + health.buffer_mb + 'MB)' : 'Ready (10 min)'}`;
-  }
-  if (lastClipChip) {
-    lastClipChip.innerText = `Last Clip: ${s.last_clip_time || 'None'}`;
+
+  const graphCard = document.querySelector(".graph-card");
+  if (graphCard) {
+    if (trulyLive) {
+      graphCard.classList.remove("hidden");
+      const realData = Array.isArray(s.chat_rate_history) && s.chat_rate_history.length > 0 ? s.chat_rate_history : streamChatHistory;
+      renderSpikeChart(realData, !isWatching);
+    } else {
+      graphCard.classList.add("hidden");
+    }
   }
 
   const timeEl = document.getElementById("live-stream-last-checked");
@@ -2038,19 +2155,12 @@ function updateStreamerLiveUI(s) {
     const rel = formatRelativeTime(s.last_checked);
     timeEl.innerText = rel;
     if (s.last_checked) {
-      if (typeof s.last_checked === "number") {
-        const ms = s.last_checked < 1e11 ? s.last_checked * 1000 : s.last_checked;
-        timeEl.title = new Date(ms).toLocaleString();
-      } else {
-        timeEl.title = String(s.last_checked);
-      }
+      const ms = s.last_checked < 1e11 ? s.last_checked * 1000 : s.last_checked;
+      timeEl.title = new Date(ms).toLocaleString();
     } else {
       timeEl.removeAttribute("title");
     }
   }
-
-  // Render chart for this streamer
-  renderSpikeChart(streamChatHistory, !s.is_live);
 }
 
 // ==================== SETTINGS & GUIDED YOUTUBE WIZARD (PROBLEMS 4 & 8) ====================

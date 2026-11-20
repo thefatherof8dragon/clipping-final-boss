@@ -41,6 +41,7 @@ from .streamers import (
     detect_platform,
     resolve_handle_and_platform,
     fetch_streamer_metadata,
+    _ACTIVE_WATCHERS,
 )
 from .youtube import schedule_upload, is_authenticated, connect_youtube_oauth, get_channel_info
 from .jobs import job_manager
@@ -696,7 +697,9 @@ def _build_streamer_updates(live_res: Dict[str, Any]) -> Dict[str, Any]:
     viewers = int(live_res.get("viewers", 0))
     status_text = live_res.get("status", "Offline")
     reason = live_res.get("reason", "")
-    return {
+    channel_name = live_res.get("channel_name", "")
+
+    updates = {
         "is_live": is_live,
         "title": title,
         "live_title": title,
@@ -709,6 +712,12 @@ def _build_streamer_updates(live_res: Dict[str, Any]) -> Dict[str, Any]:
         "last_checked": now_ts,
         "last_checked_str": time.strftime("%H:%M:%S"),
     }
+    if is_live:
+        updates["last_live"] = now_ts
+        updates["last_live_str"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    if channel_name and not channel_name.startswith("http"):
+        updates["name"] = channel_name
+    return updates
 
 @app.post("/api/streamers")
 def api_pin_streamer(req: StreamerRequest):
@@ -744,6 +753,12 @@ def api_streamer_status(streamer_id: str):
     streamer = next((s for s in state.get("streamers", []) if s["id"] == streamer_id), None)
     if not streamer:
         raise HTTPException(status_code=404, detail="Streamer not found")
+    now = time.time()
+    if streamer.get("is_live") and (now - streamer.get("last_checked", 0)) > 60:
+        streamer["is_live"] = False
+        streamer["status_text"] = "Offline"
+        streamer["status_reason"] = "Live status expired (>60s)"
+    streamer["is_watching"] = streamer_id in _ACTIVE_WATCHERS
     return streamer
 
 @app.post("/api/streamers/{streamer_id}/check")
@@ -779,12 +794,15 @@ def api_toggle_watch(streamer_id: str):
     if not streamer:
         raise HTTPException(status_code=404, detail="Streamer not found")
 
-    if streamer.get("is_live", False):
+    is_currently_watching = streamer_id in _ACTIVE_WATCHERS
+    if is_currently_watching:
         stop_watching(streamer_id)
-        return {"is_live": False}
+        return {"is_watching": False, "is_live": streamer.get("is_live", False)}
     else:
-        start_watching(streamer_id)
-        return {"is_live": True}
+        if not streamer.get("is_live"):
+            raise HTTPException(status_code=400, detail="Cannot watch an offline streamer")
+        success = start_watching(streamer_id)
+        return {"is_watching": success, "is_live": True}
 
 # ==================== SETTINGS & KEY TESTING ====================
 def mask_secret(secret: str) -> str:

@@ -804,9 +804,9 @@
                     <span id="live-status-badge" class="status-badge offline">OFFLINE</span>
                     <span id="live-viewers-badge" class="badge badge-viewers hidden">0 viewers</span>
                   </div>
-                  <div class="signal-health-chips" id="streamer-signal-health">
-                    <span class="signal-chip" id="chip-signal-chat">Chat: Connecting</span>
-                    <span class="signal-chip" id="chip-signal-audio">Audio: Waiting</span>
+                  <div class="signal-health-chips hidden" id="streamer-signal-health">
+                    <span class="signal-chip" id="chip-signal-chat">Chat: Connected</span>
+                    <span class="signal-chip" id="chip-signal-audio">Audio: Active</span>
                     <span class="signal-chip" id="chip-signal-buffer">Buffer: Ready (10 min)</span>
                     <span class="signal-chip" id="chip-last-clip">Last Clip: None</span>
                   </div>
@@ -818,7 +818,7 @@
                   🔄 Check Now
                 </button>
                 <button type="button" id="btn-toggle-watch" class="btn btn-primary">Start Watching</button>
-                <button type="button" id="btn-simulate-spike" class="btn btn-secondary btn-sm" title="Simulate a live chat rate spike">Test Spike</button>
+                <button type="button" id="btn-simulate-spike" class="btn btn-secondary btn-sm hidden" title="SIMULATED, creates a test clip">Test Spike (SIMULATED)</button>
               </div>
             </div>
 

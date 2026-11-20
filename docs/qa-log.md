@@ -442,3 +442,48 @@ Progress:      25%
     }
     ```
   - Browser host facts: visited origin `http://127.0.0.1:8000`, 0 blocked origins, screenshot verified.
+
+## Stage C: Frontend Repairs and Real Runtime Verification (2026-11-20)
+
+### Fix 1: System Health Check Modal & Subprocess Caching
+- **Problem**: Health modal was showing FFmpeg/FFprobe as "Missing" even when renders succeeded, and other tiles (yt-dlp, Python, disk, path safety) hung indefinitely on "Checking...". Sequential execution of subprocesses took >4.2s on Windows, exceeding client timeout.
+- **Root Cause**:
+  1. Frontend looked for `h.ffmpeg.present` instead of `h.ffmpeg.found` or `h.ffmpeg_version`.
+  2. Sequential execution of `ffmpeg -version`, `ffprobe -version`, and `node -v` on Windows took ~4.3s, triggering client-side aborts.
+  3. Modal footer lacked CSS styling, causing the Close button to float awkwardly.
+- **Fix**:
+  1. `clipper/health.py`: Added in-memory cached static binary lookup (`_CACHED_HEALTH_BINARIES`) with 180s TTL, dropping latency from 4341 ms to 90 ms (48x speedup). Added backward-compatible dictionary aliases (`present`, `yt_dlp`, `python`, `data_dir`, `path_safety`).
+  2. `clipper/web/static/app.js`: Updated health modal tile bindings, added real path tooltips, and adjusted client timeout to 6.0s.
+  3. `clipper/web/static/style.css`: Added proper flex-end padding, background, and borders to `.modal-footer` so the Close button sits cleanly in the footer.
+- **Evidence**:
+  - Modal opened via browser tool and all 6 tiles resolved in ~412 ms.
+  - Tiles: FFmpeg `✓ 9.0.2-full_build-www.gyan.dev`, FFprobe `✓ 9.0.2-full_build-www.gyan.dev`, yt-dlp `✓ v2026.10.26`, Python `✓ v3.14.4`, Storage `157.9 GB free`, Path Safety `47 chars`.
+  - Screenshot: `step_100_shot_1_system_health_modal_resolved.png` (verified).
+- **Commit**: `6fa7323` (`fix: health check modal resolution and ffmpeg version lookup`).
+
+### Fix 2: Streamer Live Status, Cache TTL, and Offline Enforcement
+- **Problem**:
+  1. Upcoming/scheduled streams and premiere VODs were falsely flagged as `LIVE` due to naive HTML substring searches (`"isLiveBroadcast":true`).
+  2. Dummy hardcoded chat history (`[10, 15, 12, ...]`) rendered fake flat lines when streamers were offline.
+  3. Raw URLs appeared as display names in pinned lists and headers.
+  4. Signal health chips and Test Spike buttons remained active on offline streamers.
+- **Fix**:
+  1. `clipper/streamers.py`:
+     - Rewrote `check_youtube_live` to strictly require `yt_dlp` extraction with `live_status == 'is_live'`. Explicitly rejects scheduled (`is_upcoming`, "will begin in"), ended (`was_live`, `post_live`), replays, and premieres.
+     - Updated `fetch_streamer_metadata` to auto-fetch clean channel names, never returning raw URLs.
+     - Separated `is_live` (platform broadcast state) from `is_watching` (local recording state) in `start_watching` and `stop_watching`.
+  2. `clipper/state.py` & `clipper/api.py`:
+     - Enforced strict 60s cache TTL: if `is_live` is true but `now - last_checked > 60s`, status automatically expires to `Offline`.
+     - Added `last_live` timestamp and formatted `last_live_str` ("never" or ISO string).
+     - Guarded `toggle-watch` endpoint to reject watching offline streamers with HTTP 400.
+  3. `clipper/web/static/app.js`:
+     - Initialized `streamChatHistory = []`.
+     - When OFFLINE: disabled "Start Watching", hid "Test Spike", hid Chat/Audio/Buffer badges, hid chart card, and displayed `"Offline. Last live: <time or never>"`.
+     - When LIVE: enabled "Start Watching", displayed live viewer count, and showed chart with empty pulse state (no fake flat line).
+     - When WATCHING: "Start Watching" becomes "Stop Watching", signal health chips show "Chat: Connected", "Audio: Active", "Buffer: Ready", and real elapsed time timer counts up.
+     - "Test Spike" gated strictly to `DEV_MODE=1`, labeled "SIMULATED, creates a test clip", and disabled when offline.
+- **Evidence**:
+  - Live Streamer ("Marlon"): YouTube live stream verified with `live_status == 'is_live'`. Screenshot `step_161_shot_1_step_200_streamer_live_marlon.png` shows green LIVE badge, 1,387 viewers, enabled Start Watching, hidden Test Spike, empty pulse chart.
+  - Offline Streamer ("Shreeman Legend Live"): Upcoming event in 3 hours verified offline. Screenshot `step_139_shot_1_step_201_streamer_offline_shreeman.png` shows OFFLINE badge, disabled Start Watching, hidden Test Spike, hidden signal health badges, hidden chart, and diagnostic text `"Offline. Last live: never"`.
+  - Live Watcher: Clicking "Start Watching" transitioned button to "⏹ Stop Watching", displayed active signal chips (Chat: Connected, Audio: Active, Buffer: Ready), and started elapsed counter (`00:00:02`). Screenshot `step_161_shot_2_step_202_streamer_watching_marlon.png`.
+- **Commit**: Ready for commit.

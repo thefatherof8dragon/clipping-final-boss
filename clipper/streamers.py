@@ -63,6 +63,8 @@ def fetch_streamer_metadata(url: str, platform: str) -> Dict[str, str]:
     try:
         if plat == "youtube":
             clean_url = url.split("/live")[0].split("/streams")[0].rstrip("/")
+            handle = clean_url.split("/")[-1].lstrip("@")
+            meta["name"] = handle
             with httpx.Client(timeout=8.0, follow_redirects=True) as client:
                 resp = client.get(clean_url, headers=headers)
                 if resp.status_code == 200:
@@ -70,11 +72,14 @@ def fetch_streamer_metadata(url: str, platform: str) -> Dict[str, str]:
                     t_m = re.search(r'<meta\s+property=["\']og:title["\']\s+content=["\']([^"\']+)["\']', html)
                     img_m = re.search(r'<meta\s+property=["\']og:image["\']\s+content=["\']([^"\']+)["\']', html)
                     if t_m:
-                        meta["name"] = t_m.group(1).replace(" - YouTube", "").strip()
+                        t = t_m.group(1).replace(" - YouTube", "").strip()
+                        if t and not t.startswith("http"):
+                            meta["name"] = t
                     if img_m:
                         meta["avatar_url"] = img_m.group(1).strip()
         elif plat == "twitch":
             handle = url.rstrip("/").split("/")[-1].lstrip("@")
+            meta["name"] = handle
             with httpx.Client(timeout=8.0, follow_redirects=True) as client:
                 resp = client.get(f"https://www.twitch.tv/{handle}", headers=headers)
                 if resp.status_code == 200:
@@ -82,11 +87,14 @@ def fetch_streamer_metadata(url: str, platform: str) -> Dict[str, str]:
                     t_m = re.search(r'<meta\s+property=["\']og:title["\']\s+content=["\']([^"\']+)["\']', html)
                     img_m = re.search(r'<meta\s+property=["\']og:image["\']\s+content=["\']([^"\']+)["\']', html)
                     if t_m:
-                        meta["name"] = t_m.group(1).replace(" - Twitch", "").strip()
+                        t = t_m.group(1).replace(" - Twitch", "").replace(" - Live on Twitch", "").strip()
+                        if t and not t.startswith("http"):
+                            meta["name"] = t
                     if img_m:
                         meta["avatar_url"] = img_m.group(1).strip()
         elif plat == "kick":
             handle = url.rstrip("/").split("/")[-1].lstrip("@")
+            meta["name"] = handle
             with httpx.Client(timeout=8.0, follow_redirects=True) as client:
                 resp = client.get(f"https://kick.com/api/v1/channels/{handle}", headers=headers)
                 if resp.status_code == 200:
@@ -97,25 +105,123 @@ def fetch_streamer_metadata(url: str, platform: str) -> Dict[str, str]:
     except Exception:
         pass
 
+    # Safety guarantee: Name must never be a raw URL
+    if not meta["name"] or meta["name"].startswith("http"):
+        meta["name"] = url.rstrip("/").split("/")[-1].lstrip("@") or "Streamer"
+
     return meta
 
 
 def check_youtube_live(url: str) -> Dict[str, Any]:
-    """Check if YouTube channel is live via /live page detection or yt-dlp."""
+    """
+    Check if YouTube channel is currently live.
+    Strictly requires live_status == 'is_live'.
+    Rejects scheduled, upcoming, ended, replay, or premiere broadcasts.
+    """
     u = url.strip()
     if not u.startswith("http"):
         handle = u.lstrip("@")
         live_url = f"https://www.youtube.com/@{handle}/live"
-    elif "/live" not in u and ("/watch" not in u):
+    elif "/live" not in u and "/watch" not in u and "/streams" not in u:
         live_url = u.rstrip("/") + "/live"
     else:
         live_url = u
 
+    # 1. Primary check via yt-dlp extracting live_status
+    if yt_dlp:
+        ydl_opts = {
+            "skip_download": True,
+            "quiet": True,
+            "no_warnings": True,
+            "socket_timeout": 8,
+            "extract_flat": False,
+        }
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                try:
+                    info = ydl.extract_info(live_url, download=False)
+                except Exception as e:
+                    err_msg = str(e)
+                    err_lower = err_msg.lower()
+                    if "not currently live" in err_lower or "does not have a live" in err_lower:
+                        return {
+                            "is_live": False,
+                            "title": "",
+                            "viewers": 0,
+                            "status": "Offline",
+                            "reason": "Channel is not currently live",
+                        }
+                    if "live event will begin" in err_lower or "upcoming" in err_lower or "scheduled" in err_lower:
+                        return {
+                            "is_live": False,
+                            "title": "",
+                            "viewers": 0,
+                            "status": "Offline",
+                            "reason": "Stream is scheduled/upcoming, not currently live",
+                        }
+                    if "404" in err_lower or "not found" in err_lower:
+                        return {
+                            "is_live": False,
+                            "title": "",
+                            "viewers": 0,
+                            "status": "Error",
+                            "reason": "Channel or URL not found (404)",
+                        }
+                    return {
+                        "is_live": False,
+                        "title": "",
+                        "viewers": 0,
+                        "status": "Offline",
+                        "reason": f"Channel is offline ({err_msg[:60]})",
+                    }
+
+                if not info:
+                    return {
+                        "is_live": False,
+                        "title": "",
+                        "viewers": 0,
+                        "status": "Offline",
+                        "reason": "Channel is offline",
+                    }
+
+                live_status = str(info.get("live_status", "")).lower()
+                title = (info.get("title") or "").replace(" - YouTube", "").strip()
+                viewers = int(info.get("concurrent_view_count") or info.get("view_count") or 0)
+                channel_name = info.get("channel") or info.get("uploader") or ""
+
+                # Strictly check live_status == "is_live"
+                if live_status == "is_live":
+                    return {
+                        "is_live": True,
+                        "title": title or "Live Stream",
+                        "viewers": viewers,
+                        "status": "LIVE",
+                        "reason": "Broadcasting now",
+                        "channel_name": channel_name,
+                    }
+                else:
+                    return {
+                        "is_live": False,
+                        "title": title,
+                        "viewers": 0,
+                        "status": "Offline",
+                        "reason": f"Stream is {live_status or 'offline'} (not currently live)",
+                        "channel_name": channel_name,
+                    }
+        except Exception as e:
+            return {
+                "is_live": False,
+                "title": "",
+                "viewers": 0,
+                "status": "Error",
+                "reason": f"YouTube check error: {str(e)[:60]}",
+            }
+
+    # 2. HTTP Fallback check with strict upcoming/ended rejection
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
     }
-
     try:
         with httpx.Client(timeout=6.0, follow_redirects=True) as client:
             resp = client.get(live_url, headers=headers)
@@ -137,11 +243,20 @@ def check_youtube_live(url: str) -> Dict[str, Any]:
                 }
 
             html = resp.text
+            is_upcoming = bool(
+                '"isUpcoming":true' in html
+                or '"upcomingEventData"' in html
+                or '"status":"UPCOMING"' in html
+                or "live event will begin" in html.lower()
+            )
+            is_ended = bool(
+                '"status":"ENDED"' in html
+                or '"wasLive":true' in html
+            )
             is_live = bool(
-                '"isLive":true' in html
-                or '"status":"LIVE"' in html
-                or '"isLiveBroadcast":true' in html
-                or '"liveBroadcastDetails"' in html
+                ('"isLive":true' in html or '"status":"LIVE"' in html)
+                and not is_upcoming
+                and not is_ended
             )
 
             title = ""
@@ -176,7 +291,7 @@ def check_youtube_live(url: str) -> Dict[str, Any]:
                     "title": title,
                     "viewers": 0,
                     "status": "Offline",
-                    "reason": "Channel is not currently broadcasting",
+                    "reason": "Channel is not currently broadcasting" if not is_upcoming else "Stream is scheduled/upcoming",
                 }
     except httpx.TimeoutException:
         return {
@@ -714,7 +829,7 @@ def start_watching(streamer_id: str) -> bool:
     watcher = LiveWatcher(streamer_id, streamer["url"], streamer["platform"])
     _ACTIVE_WATCHERS[streamer_id] = watcher
     watcher.start()
-    update_streamer(streamer_id, {"is_live": True})
+    update_streamer(streamer_id, {"is_watching": True})
     return True
 
 
@@ -723,7 +838,7 @@ def stop_watching(streamer_id: str) -> bool:
     watcher = _ACTIVE_WATCHERS.pop(streamer_id, None)
     if watcher:
         watcher.stop()
-    update_streamer(streamer_id, {"is_live": False})
+    update_streamer(streamer_id, {"is_watching": False})
     return True
 
 

@@ -1,6 +1,7 @@
 """State persistence for pinned streamers, daily uploads, and active sessions."""
 
 import json
+import time
 from datetime import date
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
@@ -36,35 +37,80 @@ def save_state(state: Dict[str, Any]) -> None:
     STATE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
 def get_pinned_streamers() -> List[Dict[str, Any]]:
-    return load_state().get("streamers", [])
+    state = load_state()
+    streamers = state.get("streamers", [])
+    now = time.time()
+    changed = False
+
+    for s in streamers:
+        # Rule: Never cache LIVE longer than 60s. Otherwise show OFFLINE.
+        if s.get("is_live"):
+            last_checked = s.get("last_checked", 0)
+            if (now - last_checked) > 60:
+                s["is_live"] = False
+                s["status_text"] = "Offline"
+                s["status_reason"] = "Live status expired (>60s)"
+                changed = True
+
+        # Rule: Display name: auto-fetch channel name. Never show a raw URL as name.
+        name = s.get("name", "").strip()
+        if not name or name.startswith("http://") or name.startswith("https://"):
+            url_clean = s.get("url", "").rstrip("/")
+            s["name"] = url_clean.split("/")[-1].lstrip("@") or "Streamer"
+            changed = True
+
+        # Remove fake dummy chat rate history
+        if s.get("chat_rate_history") == [10, 15, 12, 18, 22, 15, 30, 45, 110, 140, 60, 35]:
+            s["chat_rate_history"] = []
+            changed = True
+
+    if changed:
+        save_state(state)
+    return streamers
 
 def add_streamer(name: str, url: str, platform: str, avatar_url: str = "") -> Dict[str, Any]:
     state = load_state()
     streamer_id = f"st_{abs(hash(url)) % 1000000:06d}"
+    clean_name = name.strip()
+    if not clean_name or clean_name.startswith("http://") or clean_name.startswith("https://"):
+        clean_name = url.rstrip("/").split("/")[-1].lstrip("@") or "Streamer"
+
     item = {
         "id": streamer_id,
-        "name": name,
+        "name": clean_name,
         "url": url,
         "platform": platform.lower(),
         "avatar_url": avatar_url,
         "is_live": False,
+        "is_watching": False,
         "elapsed_time": "00:00:00",
         "chat_status": "disconnected",
-        "chat_rate_history": [10, 15, 12, 18, 22, 15, 30, 45, 110, 140, 60, 35],
+        "chat_rate_history": [],
         "clips_count": 0,
         "clips": [],
         "auto_schedule": False,
+        "last_live": None,
+        "last_live_str": "never",
     }
     # Avoid duplicate URLs
-    state["streamers"] = [s for s in state["streamers"] if s["url"] != url]
+    state["streamers"] = [s for s in state.get("streamers", []) if s["url"] != url]
     state["streamers"].append(item)
     save_state(state)
     return item
 
 def update_streamer(streamer_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     state = load_state()
-    for s in state["streamers"]:
+    for s in state.get("streamers", []):
         if s["id"] == streamer_id:
+            # Prevent setting raw URL as name
+            if "name" in updates:
+                n = str(updates["name"]).strip()
+                if not n or n.startswith("http://") or n.startswith("https://"):
+                    del updates["name"]
+            # Track last_live when confirmed live
+            if updates.get("is_live"):
+                updates["last_live"] = time.time()
+                updates["last_live_str"] = time.strftime("%Y-%m-%d %H:%M:%S")
             s.update(updates)
             save_state(state)
             return s
