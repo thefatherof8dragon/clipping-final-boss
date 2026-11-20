@@ -309,3 +309,26 @@ Progress:      25%
 ```
 - **Integrity Verification**: Job was reliably recovered from disk without duplicate entries or silent drop. Status reconciled to `failed` with explanation `"interrupted by restart"`.
 - **Live Stream Recording Restart Mid-Recording**: **unverified** (streamlink dependency is not installed; simulated spike cutting is verified in test suite).
+
+### Step 5: Frontend Contradiction Report
+- **React / Tailwind Redesign Artifacts**:
+  - `package.json` (665 B)
+  - `components.json` (416 B)
+  - `tailwind.config.js` (1,671 B)
+  - `tsconfig.json` (538 B)
+  - `components/final-boss-get-started.tsx` (10,982 B)
+  - `components/ui/blackhole-hero-section.tsx` (46,733 B)
+  - `components/ui/demo.tsx` (3,370 B)
+  - `lib/utils.ts` (169 B)
+- **Vanilla Frontend Artifacts**:
+  - `clipper/web/static/index.html` (67,090 B)
+  - `clipper/web/static/app.js` (91,916 B)
+  - `clipper/web/static/style.css` (79,107 B)
+  - `clipper/web/static/blackhole.js` (34,287 B)
+  - `clipper/web/static/placeholder_thumb.svg` (1,322 B)
+- **Active Served Frontend**:
+  - The live FastAPI server strictly mounts and serves `clipper/web/static/` via `app.mount("/", StaticFiles(directory=STATIC_DIR, html=True))`.
+  - The React `.tsx` components in `components/` are uncompiled and not linked to any active build pipeline.
+- **Recommendation**:
+  - **Keep the vanilla frontend (`clipper/web/static/`)** as the primary single-file/zero-build desktop UI for Clipper. It matches the single-command `python run.py` philosophy (Python 3.10+ and ffmpeg only, zero npm build step required for end users).
+  - Retain the React artifacts in `components/` for reference if a full Vite SPA build step is introduced in a future release.
