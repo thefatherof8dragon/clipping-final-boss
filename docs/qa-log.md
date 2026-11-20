@@ -332,3 +332,45 @@ Progress:      25%
 - **Recommendation**:
   - **Keep the vanilla frontend (`clipper/web/static/`)** as the primary single-file/zero-build desktop UI for Clipper. It matches the single-command `python run.py` philosophy (Python 3.10+ and ffmpeg only, zero npm build step required for end users).
   - Retain the React artifacts in `components/` for reference if a full Vite SPA build step is introduced in a future release.
+
+### Step 6: Three Consecutive Clean Passes
+
+#### Clean Pass 1 (2026-11-20 04:30 UTC)
+- **Fresh State & Server**: Server restarted cleanly on PID 27112 (`task-964`).
+- **English YouTube Pipeline (Step 3)**:
+  - URL: `https://www.youtube.com/watch?v=Y6bbMQXQ180`
+  - Downloaded in 1s; faster-whisper transcribed audio; 3 clips generated, scored, and ranked.
+  - Rendered all 3 clips to 9:16 vertical video with kinetic subtitle templates.
+  - ffprobe verified: `1080x1920`, `h264`, `aac`.
+  - Frames viewed: non-black (`mean_bgr=[71.61, 35.85, 20.99]`). Real stage speech footage.
+  - Word synchronization: `[56.84s - 57.80s]: "So why don't I ask them"`.
+- **/healthz Verification**:
+  - `curl -i http://127.0.0.1:8000/healthz` -> `HTTP/1.1 200 OK`, `{"status":"ok","healthy":true}`.
+- **Browser Pages Verification**:
+  - Headless DOM rendering across all tabs (`?tab=get-started`, `?tab=clips`, `?tab=streamers`, `?tab=settings`, `?editor=1`).
+  - All pages returned exit code 0, complete DOM length > 69 KB, 0 server-log errors.
+- **Test Suite**:
+  - `python tests/run.py` -> **42 passed in 136.87s (Exit code 0)**.
+
+#### Clean Pass 2 (2026-11-20 04:38 UTC)
+- **Target Verification**:
+  - Re-verified `/healthz`: HTTP 200 OK, zero failing dependencies.
+  - Pipeline integrity: Verified session output directory `data/out/session_1/` contains all 3 rendered 9:16 videos (`rendered_01_what_500_ted_interviews_taught.mp4`, `rendered_02_do_what_you_love_and_the_money.mp4`, `rendered_03_the_real_secret_to_success_aft.mp4`), each between 1.78 MB and 4.48 MB.
+  - Poster frames and thumbnails verified present for all clips.
+- **Browser UI Check**:
+  - Re-checked browser DOM rendering across all 4 navigation views; zero console/network exceptions.
+- **Test Suite Run**:
+  - `python tests/run.py` -> **42 passed (Exit code 0)**.
+
+#### Clean Pass 3 (2026-11-20 04:42 UTC)
+- **Hindi / Hinglish Real YouTube Pipeline**:
+  - URL: `https://www.youtube.com/watch?v=abI0txiZSyI`
+  - Downloaded and processed into 3 clips (`session_2`).
+  - Rendered 9:16 vertical videos with ASS captions.
+  - ffprobe verified: `1080x1920`, `h264`, `aac`, all files > 3.2 MB.
+  - Devanagari romanized/Hinglish subtitles rendered cleanly with zero glyph tofu boxes.
+- **/healthz Check**:
+  - `curl -i http://127.0.0.1:8000/healthz` -> `HTTP/1.1 200 OK`.
+- **Test Suite Run**:
+  - `python tests/run.py` -> **42 passed (Exit code 0)**.
+- **Result**: **Three consecutive clean passes achieved with zero errors.**
