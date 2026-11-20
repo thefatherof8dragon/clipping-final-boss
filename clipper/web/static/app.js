@@ -1060,6 +1060,14 @@ function initEditorEvents() {
     });
   }
 
+  // Timeline zoom slider
+  const zoomSlider = document.getElementById("timeline-zoom-slider");
+  if (zoomSlider) {
+    zoomSlider.addEventListener("input", () => {
+      initBottomTimeline();
+    });
+  }
+
   // Hook panel controls
   const hookInput = document.getElementById("hook-text-input");
   if (hookInput) {
@@ -1481,20 +1489,42 @@ function chunkWordsIntoLines(words) {
 
 function initBottomTimeline() {
   const track = document.getElementById("timeline-word-blocks") || document.getElementById("timeline-track-container") || document.getElementById("timeline-words-track");
-  if (!track || !currentClip || !currentClip.words) return;
+  if (!track || !currentClip) return;
   track.innerHTML = "";
 
-  const clipDur = currentClip.duration || (currentClip.end - currentClip.start) || (currentClip.end_time - currentClip.start_time) || 1;
+  const clipDur = currentClip.duration || (currentClip.end - currentClip.start) || (currentClip.end_time - currentClip.start_time) || 30;
   const startOffset = currentClip.start || currentClip.start_time || 0;
 
-  const words = currentClip.words || [];
-  if (words.length === 0) return;
+  let words = currentClip.words || [];
+  if (words.length === 0 && currentClip.transcript_text) {
+    const rawTokens = currentClip.transcript_text.trim().split(/\s+/).filter(Boolean);
+    if (rawTokens.length > 0) {
+      const step = clipDur / rawTokens.length;
+      words = rawTokens.map((tok, i) => ({
+        word: tok,
+        start: startOffset + i * step,
+        end: startOffset + (i + 1) * step,
+      }));
+      currentClip.words = words;
+    }
+  }
+
+  const zoomSlider = document.getElementById("timeline-zoom-slider");
+  const zoom = parseFloat(zoomSlider ? zoomSlider.value : 1) || 1;
+
+  track.style.width = `${zoom * 100}%`;
+  const container = document.getElementById("timeline-track-container");
+  if (container) {
+    container.style.overflowX = zoom > 1 ? "auto" : "hidden";
+  }
 
   words.forEach(w => {
     const pill = document.createElement("div");
     pill.className = "timeline-word-pill";
-    const leftPct = Math.max(0, Math.min(100, ((w.start - startOffset) / clipDur) * 100));
-    const rawWidthPct = Math.max(0.6, ((w.end - w.start) / clipDur) * 100);
+    const relStart = Math.max(0, (w.start || 0) - startOffset);
+    const relEnd = Math.max(relStart, (w.end || relStart + 0.3) - startOffset);
+    const leftPct = Math.max(0, Math.min(100, (relStart / clipDur) * 100));
+    const rawWidthPct = Math.max(0.6, ((relEnd - relStart) / clipDur) * 100);
     const widthPct = Math.min(100 - leftPct, rawWidthPct);
 
     pill.style.position = "absolute";
@@ -1518,10 +1548,10 @@ function initBottomTimeline() {
     pill.style.fontWeight = "600";
     pill.style.cursor = "pointer";
     pill.style.zIndex = "5";
-    pill.setAttribute("title", `"${w.word}" (${Number(w.start).toFixed(2)}s - ${Number(w.end).toFixed(2)}s)`);
+    pill.setAttribute("title", `"${w.word}" (${relStart.toFixed(1)}s - ${relEnd.toFixed(1)}s)`);
 
     // Cleanly display text when width allows, preventing stacked word overlap
-    if (widthPct >= 2.8) {
+    if (widthPct >= 2.5 || zoom > 1.5) {
       pill.innerText = w.word;
     } else {
       pill.innerText = "";
@@ -1529,15 +1559,124 @@ function initBottomTimeline() {
 
     pill.addEventListener("click", (e) => {
       e.stopPropagation();
+      document.querySelectorAll(".timeline-word-pill").forEach(p => {
+        p.classList.remove("selected");
+        p.style.background = "linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(139, 92, 246, 0.5))";
+        p.style.borderColor = "rgba(165, 180, 252, 0.45)";
+      });
+      pill.classList.add("selected");
+      pill.style.background = "rgba(250, 204, 21, 0.4)";
+      pill.style.borderColor = "#FACC15";
+
       const video = document.getElementById("editor-video");
       if (video) {
-        video.currentTime = Math.max(0, w.start - startOffset);
+        video.currentTime = relStart;
         video.play().catch(() => {});
       }
     });
 
     track.appendChild(pill);
   });
+
+  initTrimHandles();
+}
+
+function initTrimHandles() {
+  const handleStart = document.getElementById("trim-handle-start");
+  const handleEnd = document.getElementById("trim-handle-end");
+  const track = document.getElementById("timeline-track-container");
+  const maskLeft = document.getElementById("trim-mask-left");
+  const maskRight = document.getElementById("trim-mask-right");
+  const activeRegion = document.getElementById("trim-active-region");
+  const durDisplay = document.getElementById("timeline-duration-display");
+
+  if (!handleStart || !handleEnd || !track || !activeRegion) return;
+
+  let isDraggingStart = false;
+  let isDraggingEnd = false;
+  let startPct = 0;
+  let endPct = 100;
+
+  function updateTrimUI() {
+    if (maskLeft) maskLeft.style.width = `${startPct}%`;
+    if (maskRight) maskRight.style.width = `${100 - endPct}%`;
+    if (activeRegion) {
+      activeRegion.style.left = `${startPct}%`;
+      activeRegion.style.width = `${endPct - startPct}%`;
+    }
+    if (currentClip && durDisplay) {
+      const dur = currentClip.duration || 30;
+      const tStart = (startPct / 100) * dur;
+      const tEnd = (endPct / 100) * dur;
+      durDisplay.innerText = `Trim: ${formatTime(tStart)} - ${formatTime(tEnd)} (${(tEnd - tStart).toFixed(1)}s)`;
+      currentClip.trim_start = tStart;
+      currentClip.trim_end = tEnd;
+    }
+  }
+
+  handleStart.onmousedown = (e) => {
+    isDraggingStart = true;
+    e.preventDefault();
+  };
+  handleEnd.onmousedown = (e) => {
+    isDraggingEnd = true;
+    e.preventDefault();
+  };
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isDraggingStart && !isDraggingEnd) return;
+    const rect = track.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+
+    if (isDraggingStart) {
+      startPct = Math.min(pct, endPct - 5);
+      updateTrimUI();
+    } else if (isDraggingEnd) {
+      endPct = Math.max(pct, startPct + 5);
+      updateTrimUI();
+    }
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (isDraggingStart || isDraggingEnd) {
+      isDraggingStart = false;
+      isDraggingEnd = false;
+      flashSavedStatus();
+    }
+  });
+
+  // Touch support for mobile (390x844)
+  handleStart.ontouchstart = (e) => {
+    isDraggingStart = true;
+    e.stopPropagation();
+  };
+  handleEnd.ontouchstart = (e) => {
+    isDraggingEnd = true;
+    e.stopPropagation();
+  };
+
+  window.addEventListener("touchmove", (e) => {
+    if (!isDraggingStart && !isDraggingEnd) return;
+    if (e.touches.length === 0) return;
+    const rect = track.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, e.touches[0].clientX - rect.left));
+    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    if (isDraggingStart) {
+      startPct = Math.min(pct, endPct - 5);
+      updateTrimUI();
+    } else if (isDraggingEnd) {
+      endPct = Math.max(pct, startPct + 5);
+      updateTrimUI();
+    }
+  }, { passive: true });
+
+  window.addEventListener("touchend", () => {
+    isDraggingStart = false;
+    isDraggingEnd = false;
+  });
+
+  updateTrimUI();
 }
 
 function renderEditorScoresSummary(clip) {

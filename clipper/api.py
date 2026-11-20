@@ -395,6 +395,7 @@ def api_list_sessions():
                 })
     return sessions
 
+@app.get("/api/sessions/{session_id}")
 @app.get("/api/sessions/{session_id}/clips")
 def api_get_session_clips(session_id: str):
     """Returns ranked clips for given session."""

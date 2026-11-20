@@ -486,4 +486,35 @@ Progress:      25%
   - Live Streamer ("Marlon"): YouTube live stream verified with `live_status == 'is_live'`. Screenshot `step_161_shot_1_step_200_streamer_live_marlon.png` shows green LIVE badge, 1,387 viewers, enabled Start Watching, hidden Test Spike, empty pulse chart.
   - Offline Streamer ("Shreeman Legend Live"): Upcoming event in 3 hours verified offline. Screenshot `step_139_shot_1_step_201_streamer_offline_shreeman.png` shows OFFLINE badge, disabled Start Watching, hidden Test Spike, hidden signal health badges, hidden chart, and diagnostic text `"Offline. Last live: never"`.
   - Live Watcher: Clicking "Start Watching" transitioned button to "⏹ Stop Watching", displayed active signal chips (Chat: Connected, Audio: Active, Buffer: Ready), and started elapsed counter (`00:00:02`). Screenshot `step_161_shot_2_step_202_streamer_watching_marlon.png`.
+- **Commit**: `7e201ec` (`fix: streamer live status validation, cache ttl, and offline state enforcement`).
+
+### Fix 3: Editor Three-Zone Layout and Responsive Viewports (1920x1080, 1366x768, 390x844)
+- **Problem**:
+  1. The editor previously contained 4 awkward horizontal zones (rail, tool-panel, preview stage, and templates-sidebar), causing severe horizontal squishing on laptops and total layout breakage on mobile.
+  2. The 9:16 preview video player did not fill the available height cleanly and had dead zones.
+  3. Video element had unstyled native browser controls potentially bleeding through.
+  4. Bottom timeline zoom slider had no event listeners; word pills could overlap at small widths, and drag handles lacked interactive drag logic.
+- **Fix**:
+  1. `clipper/web/static/index.html`:
+     - Cleanly structured the workspace into the exact 3 zones required:
+       - **Zone 1 (Left)**: Tool rail navigation (`Captions`, `Styles`, `Reframe`, `Hook`, `Metadata`).
+       - **Zone 2 (Center)**: Centered 9:16 vertical preview stage filling available height without black dead zones.
+       - **Zone 3 (Right)**: Active tool panel scrolling internally.
+     - Embedded the 10 viral style templates gallery (`#templates-gallery-grid`) directly into the Styles active panel (`#panel-tab-templates`), eliminating the redundant 4th zone.
+  2. `clipper/web/static/style.css`:
+     - Styled `.tool-panel` with `border-left` as the right-side active drawer.
+     - Added video pseudo-element rules (`::-webkit-media-controls`, etc.) to suppress all browser controls.
+     - Added comprehensive media query `@media (max-width: 768px)`:
+       - Preview player remains front and center on top (`height: 380px`, 9:16, never blank).
+       - Tool rail transitions to horizontal icon bar underneath.
+       - Active tool panel scrolls smoothly below.
+       - Bottom timeline stays fixed and compact with zero page overflow.
+  3. `clipper/web/static/app.js`:
+     - Rewrote `initBottomTimeline` to cleanly render word pills with width clamping, ellipsis, and tooltip.
+     - Implemented `initTrimHandles` with mouse and touch event listeners, updating start/end trim boundaries and duration readout in real time.
+     - Wired `#timeline-zoom-slider` to smoothly scale word pills and enable horizontal scrolling without overlap.
+- **Evidence**:
+  - 1920x1080 Viewport: Screenshot `step_167_shot_1_step_300_editor_1920x1080.png` confirms 3-zone architecture: left rail, centered 9:16 preview player with custom dark controls bar, right Captions panel, and bottom word timeline.
+  - 1366x768 Viewport: Screenshot `step_171_shot_1_step_301_editor_1366x768.png` confirms Styles panel selected, all 10 viral style cards cleanly rendered in 2 columns with "THE SECRET" typography preview, and centered 9:16 video frame visible and non-blank.
+  - 390x844 Viewport: Screenshot `step_173_shot_1_step_302_editor_390x844.png` confirms mobile responsiveness: top 9:16 player, middle horizontal tool rail and active styles panel, and bottom compact timeline with 0 horizontal page overflow.
 - **Commit**: Ready for commit.
