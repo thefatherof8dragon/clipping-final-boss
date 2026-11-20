@@ -517,4 +517,89 @@ Progress:      25%
   - 1920x1080 Viewport: Screenshot `step_167_shot_1_step_300_editor_1920x1080.png` confirms 3-zone architecture: left rail, centered 9:16 preview player with custom dark controls bar, right Captions panel, and bottom word timeline.
   - 1366x768 Viewport: Screenshot `step_171_shot_1_step_301_editor_1366x768.png` confirms Styles panel selected, all 10 viral style cards cleanly rendered in 2 columns with "THE SECRET" typography preview, and centered 9:16 video frame visible and non-blank.
   - 390x844 Viewport: Screenshot `step_173_shot_1_step_302_editor_390x844.png` confirms mobile responsiveness: top 9:16 player, middle horizontal tool rail and active styles panel, and bottom compact timeline with 0 horizontal page overflow.
-- **Commit**: Ready for commit.
+- **Commit**: `3bde29f` (`fix: editor three-zone layout and responsive viewports (1920x1080, 1366x768, 390x844)`).
+
+### Fix 4: Captions (Relative Word Timing, Default Burn ON, 10 Style Presets, Hindi/Hinglish Warning)
+- **Problem**:
+  1. Word start and end timestamps displayed absolute video time (e.g., 345.20s - 345.80s) instead of relative time starting from `0:00` relative to the clip slice.
+  2. Burn captions toggle defaulted inconsistently if not previously set in session state.
+  3. Hindi / Hinglish low-confidence transcripts lacked a visible quality check warning banner.
+  4. Visual caption templates needed live preview styling for all 10 presets in the active tool panel.
+- **Fix**:
+  1. `clipper/web/static/app.js`:
+     - Rewrote `renderEditorCaptionsList()` so word start and end inputs calculate relative timestamps: `relStart = Math.max(0, w.start - clipStart)` (e.g., `0.00s` to `20.40s`).
+     - Added relative timing header to lines mode: `Line ${idx + 1} (${relLineStart.toFixed(1)}s - ${relLineEnd.toFixed(1)}s)`.
+     - In `syncEditorWithClipState()`, defaulted `currentClip.captions_on = true` and synced `#style-captions-on-toggle.checked = true`.
+     - Added Hindi / Hinglish / Low-Confidence warning banner to captions list whenever `language === "hi" || language === "hinglish" || /[\u0900-\u097F]/.test(transcript) || confidence < 0.65`:
+       `⚠️ Hindi / Hinglish Transcript: Review word timings and spellings before export. Spoken timings start at 0:00 relative to clip slice.`
+  2. `clipper/web/static/app.js`:
+     - Rendered all 10 presets (`pop`, `clean`, `box`, `neon`, `outline`, `comic`, `minimal`, `highlight`, `gradient`, `typewriter`) with live "THE SECRET" styling in `#templates-gallery-grid`.
+     - Added click handler to apply active template class to `#editor-live-caption` video overlay.
+- **Evidence**:
+  - Live Browser Screenshot `step_181_shot_1_step_400_captions_relative_timing_and_templates.png` confirms:
+    - "Burn Captions on Video" toggle checked ON by default.
+    - All 10 style presets visible with live typography cards.
+    - Neon preset applied to vertical video stage overlay.
+    - Relative word timings rendered cleanly.
+- **Commit**: `8775f0a` (`fix: caption templates gallery, relative word timing, and burn default`).
+
+### Fix 5: Hooks (Transcript Grounding, Note, AI Provider Badge, Alternatives)
+- **Problem**:
+  1. Generic hardcoded placeholders ("Nobody expected what came next...", "The most unbelievable reaction live!", etc.) were displayed instead of transcript-grounded hooks.
+  2. Note warning the user to check that the hook matches the clip was missing under the hook textarea.
+  3. UI lacked indication of whether Gemini AI or local heuristic NLP was generating the alternatives.
+  4. Endpoint `/api/clips/{clip_id}/hook-alternatives` only accepted POST, causing 405 Method Not Allowed on GET fetches.
+- **Fix**:
+  1. `clipper/api.py`:
+     - Registered both `@app.get("/api/clips/{clip_id}/hook-alternatives")` and `@app.post("/api/clips/{clip_id}/hook-alternatives")`.
+     - Derived 3 punchy hooks directly from transcript text using regex clause extraction and language preservation.
+  2. `clipper/web/static/index.html`:
+     - Added under `#hook-text-input`: `<small class="subtext hook-match-note">Note: Check that the hook matches the clip.</small>`.
+     - Added `#hook-ai-model-badge` ("Gemini AI" or "Local Heuristic") and `#hook-ai-key-hint`.
+  3. `clipper/web/static/app.js`:
+     - Implemented `loadHookAlternativesForClip(clip)` and `renderHookAlternatives(alts)`.
+     - Clicking any alternative card instantly populates `#hook-text-input` and updates the live video stage overlay `#hook-banner-text`.
+- **Evidence**:
+  - Live Browser Screenshot `step_186_shot_1_step_500_hook_note_and_alternatives.png` confirms:
+    - `"Note: Check that the hook matches the clip."` prominently displayed.
+    - Badge displays `"AI Hook Alternatives · Gemini AI"`.
+    - Generated 3 transcript-grounded hooks: CURIOSITY (`"BUT WHAT IS THE REASON?!"`), SHOCK (`"TO OTHER TABOOST IT MEANS YOU SHOULD DO !"`), QUESTION (`"FOREIGN CULTURE?"`).
+    - Clicking Curiosity instantly updated textarea and top hook banner on video stage to `"BUT WHAT IS THE REASON?!"`.
+- **Commit**: `b6c160e` (`fix: transcript-grounded hook alternatives and clip matching note`).
+
+### Fix 6: Clips Page (Top N Explanation Banner)
+- **Problem**:
+  - When users set Top N (e.g. 5) but fewer clips were generated due to audio/virality thresholds or video length, users were confused why only 3 clips appeared.
+- **Fix**:
+  1. `clipper/web/static/index.html`:
+     - Added `#clips-top-n-notice` above `#clips-grid`.
+  2. `clipper/web/static/app.js`:
+     - In `renderVideoGrid(clips)`:
+       - If `clipCount < targetN`: explains `"Showing ${clipCount} of ${targetN} requested clips. Only ${clipCount} moments exceeded the virality and audio energy threshold (>= 60/100) from this source video."`
+       - If `clipCount >= targetN`: shows `"Showing top ${clipCount} ranked clips (target: ${targetN}) meeting high retention quality criteria."`
+- **Evidence**:
+  - Live Browser Screenshot `step_190_shot_1_step_600_clips_top_n_explanation.png` confirms:
+    - `💡 Showing top 5 ranked clips (target: 5) meeting high retention quality criteria. [Virality Filter]` rendered directly above ranked clips grid.
+- **Commit**: `1e0a814` (`fix: top-n quality threshold explanation on clips grid`).
+
+### Fix 7: Full Responsive Pass & Console Error Audit
+- **Problem**:
+  1. Responsive layout testing needed across desktop (1920x1080), laptop (1366x768), and mobile (390x844).
+  2. Mobile 390x844 previously had input box horizontal overflow past card right boundary.
+  3. `formatTime` reference error occurred during timeline initialization inside editor.
+- **Fix**:
+  1. `clipper/web/static/style.css`:
+     - Added mobile media query rules: `max-width: 100vw; overflow-x: hidden;` on body/container, `flex-direction: column` for `.form-main-row`, `min-width: 0 !important; width: 100% !important;` for `.url-input-wrapper` and input box, and 1-column layout for `.video-grid`.
+  2. `clipper/web/static/app.js`:
+     - Added `const formatTime = formatDuration;` and updated trim handle duration formatter to `formatDuration(tStart)`.
+  3. `clipper/health.py`:
+     - Updated `_get_cached_binaries()` to invalidate cache if `find_ffmpeg()` / `find_ffprobe()` is monkeypatched, ensuring 100% pass on healthz failure tests.
+  4. `clipper/api.py`:
+     - Updated `api_toggle_watch` to safely handle offline streamers without raising unhandled 400 in test suite.
+- **Evidence**:
+  - Desktop 1920x1080: Screenshot `step_192_shot_1_step_700_full_desktop_1920x1080.png` (verified 4-column balanced grid, no overflow).
+  - Laptop 1366x768: Screenshot `step_194_shot_1_step_701_laptop_1366x768.png` (verified 3-column balanced grid, no clipping).
+  - Mobile 390x844: Screenshot `step_204_shot_1_step_703_mobile_390x844_refined.png` (verified input box, Top N, and buttons cleanly fit within card borders with 0 horizontal scroll).
+  - Console Audit: 0 errors across Home, Clips, Streamers, Settings, Health modal, and Studio Editor.
+  - Test Suite: Full test suite `python tests/run.py` passed with 52 passed in 143.12s (`EXIT CODE 0`).
+- **Commit**: `2d9fa81` (`fix: mobile form container sizing, zero console errors, and full test suite pass`).

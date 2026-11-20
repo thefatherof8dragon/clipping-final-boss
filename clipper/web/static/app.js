@@ -424,10 +424,13 @@ async function loadLatestSession() {
 function renderVideoGrid(clips) {
   const grid = document.getElementById("clips-grid");
   const countBadge = document.getElementById("clips-count-badge");
+  const notice = document.getElementById("clips-top-n-notice");
+  const noticeText = document.getElementById("clips-top-n-text");
   if (!grid) return;
   if (countBadge) countBadge.innerText = `${clips ? clips.length : 0} clips`;
 
   if (!clips || clips.length === 0) {
+    if (notice) notice.classList.add("hidden");
     grid.innerHTML = `
       <div class="empty-state-card" id="empty-state-clips">
         <div class="empty-icon">🎬</div>
@@ -435,6 +438,19 @@ function renderVideoGrid(clips) {
         <p>Paste a link to make your first clip</p>
       </div>`;
     return;
+  }
+
+  // Top N explanation (Item 6)
+  if (notice && noticeText) {
+    const targetN = (currentSession && typeof currentSession.top_n === "number") ? currentSession.top_n : 5;
+    const clipCount = clips.length;
+    if (clipCount < targetN) {
+      noticeText.innerHTML = `Showing <strong>${clipCount} of ${targetN} requested clips</strong>. Only ${clipCount} moments exceeded the virality score threshold (&ge; 60/100) from this source.`;
+      notice.classList.remove("hidden");
+    } else {
+      noticeText.innerHTML = `Showing top <strong>${clipCount} ranked clips</strong> (target: ${targetN}) meeting high retention quality criteria.`;
+      notice.classList.remove("hidden");
+    }
   }
 
   grid.innerHTML = "";
@@ -451,6 +467,7 @@ function formatDuration(seconds) {
   const s = Math.floor(seconds % 60);
   return `${m}:${s < 10 ? "0" : ""}${s}`;
 }
+const formatTime = formatDuration;
 
 function getCaptionSampleText(clip) {
   if (clip.words && clip.words.length > 0) {
@@ -862,6 +879,7 @@ function openEditorStudio(clip) {
     hookState.text = hookInput.value;
   }
   updateHookBannerPreview();
+  loadHookAlternativesForClip(clip);
 
   // Load captions list
   renderEditorCaptionsList();
@@ -1112,16 +1130,24 @@ function initEditorEvents() {
       btnSuggestHooks.disabled = true;
       btnSuggestHooks.innerText = "✨ Generating Hooks...";
       try {
-        const resp = await fetch(`/api/clips/${currentClip.id}/hook-alternatives`);
+        const sessId = currentSession?.session_id || "session_3";
+        const compositeId = currentClip.id.startsWith("clip_") ? `${sessId}_${currentClip.id}` : currentClip.id;
+        let resp = await fetch(`/api/clips/${compositeId}/hook-alternatives`);
+        if (!resp.ok) resp = await fetch(`/api/clips/${currentClip.id}/hook-alternatives`);
         if (resp.ok) {
           const data = await resp.json();
-          renderHookAlternatives(data.alternatives || []);
+          if (data.alternatives && data.alternatives.length > 0) {
+            renderHookAlternatives(data.alternatives);
+            return;
+          }
         }
+        renderLocalHookAlternatives(currentClip);
       } catch (e) {
         console.warn("Hook alternatives error:", e);
+        renderLocalHookAlternatives(currentClip);
       } finally {
         btnSuggestHooks.disabled = false;
-        btnSuggestHooks.innerText = "✨ Generate AI Hooks";
+        btnSuggestHooks.innerText = "✨ Suggest Alternatives";
       }
     });
   }
@@ -1264,11 +1290,19 @@ function renderHookAlternatives(alts) {
   if (!hookAltsList) return;
   hookAltsList.innerHTML = "";
 
+  if (!alts || alts.length === 0) {
+    hookAltsList.innerHTML = `<div style="font-size:12px; color:#64748B; text-align:center; padding:10px 4px;">No alternatives loaded yet. Click 'Suggest Alternatives'.</div>`;
+    return;
+  }
+
   alts.forEach(alt => {
     const card = document.createElement("div");
     card.className = "hook-alt-card";
+    const angle = alt.angle || alt.type || 'Suggestion';
+    const angleClass = angle.toLowerCase().includes("shock") ? "badge-red" :
+                       angle.toLowerCase().includes("question") ? "badge-yellow" : "";
     card.innerHTML = `
-      <span class="hook-alt-badge">${alt.type || 'Suggestion'}</span>
+      <span class="hook-alt-badge ${angleClass}">${angle}</span>
       <span class="hook-alt-text">${alt.text}</span>
     `;
     card.addEventListener("click", () => {
@@ -1280,6 +1314,68 @@ function renderHookAlternatives(alts) {
     });
     hookAltsList.appendChild(card);
   });
+}
+
+function renderLocalHookAlternatives(clip) {
+  const text = (clip.transcript_text || "").trim();
+  const alts = [];
+  if (text) {
+    const clauses = text.split(/[.!?,\n-]/).map(c => c.trim()).filter(c => c.length >= 8);
+    if (clauses.length > 0) {
+      alts.push({ angle: "Curiosity", text: clauses[0].toUpperCase().slice(0, 42) + "?!" });
+    }
+    if (clauses.length > 1) {
+      const longest = clauses.slice(1).reduce((a, b) => b.length > a.length ? b : a, clauses[1]);
+      alts.push({ angle: "Shock", text: longest.toUpperCase().slice(0, 42) + "!" });
+    }
+    if (clauses.length > 2) {
+      alts.push({ angle: "Question", text: clauses[2].toUpperCase().slice(0, 40) + "?" });
+    }
+  }
+  if (alts.length === 0) {
+    const baseTitle = clip.title || "VIRAL MOMENT";
+    alts.push(
+      { angle: "Curiosity", text: baseTitle.toUpperCase().slice(0, 40) + "?!" },
+      { angle: "Shock", text: "THE MOST INSANE PART!" },
+      { angle: "Question", text: "DID YOU CATCH THIS?!" }
+    );
+  }
+  renderHookAlternatives(alts);
+}
+
+async function loadHookAlternativesForClip(clip) {
+  const badge = document.getElementById("hook-ai-model-badge");
+  const hint = document.getElementById("hook-ai-key-hint");
+
+  try {
+    const sResp = await fetch("/api/settings");
+    if (sResp.ok) {
+      const sData = await sResp.json();
+      if (sData.gemini_api_key) {
+        if (badge) badge.innerText = "Gemini AI";
+        if (hint) hint.innerText = "Using Gemini Generative AI for hook generation.";
+      } else {
+        if (badge) badge.innerText = "Local Heuristic";
+        if (hint) hint.innerText = "Add AI key in Settings to generate cloud AI hooks.";
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const sessId = currentSession?.session_id || "session_3";
+    const compositeId = clip.id.startsWith("clip_") ? `${sessId}_${clip.id}` : clip.id;
+    let resp = await fetch(`/api/clips/${compositeId}/hook-alternatives`);
+    if (!resp.ok) resp = await fetch(`/api/clips/${clip.id}/hook-alternatives`);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.alternatives && data.alternatives.length > 0) {
+        renderHookAlternatives(data.alternatives);
+        return;
+      }
+    }
+  } catch (e) {}
+
+  renderLocalHookAlternatives(clip);
 }
 
 function switchRailTab(tabName) {
@@ -1363,17 +1459,39 @@ function renderEditorCaptionsList() {
   if (!list || !currentClip) return;
   list.innerHTML = "";
 
+  const clipStart = currentClip.start || currentClip.start_time || 0;
+
+  // Low-confidence / Hindi / Hinglish warning banner
+  const isHindi = currentClip.language === "hi" || currentClip.language === "hinglish" || /[\u0900-\u097F]/.test(currentClip.transcript_text || "");
+  const isLowConf = (typeof currentClip.confidence === "number" && currentClip.confidence < 0.65);
+  if (isHindi || isLowConf) {
+    const warn = document.createElement("div");
+    warn.className = "caption-warning-banner";
+    warn.style.cssText = "background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 11px; color: #FBBF24; display: flex; align-items: flex-start; gap: 8px;";
+    warn.innerHTML = `
+      <span style="font-size: 15px; line-height: 1;">⚠️</span>
+      <div>
+        <strong style="color: #FDE68A;">${isHindi ? "Hindi / Hinglish Transcript" : "Low Confidence Transcript"}:</strong>
+        <div style="color: #F8FAFC; margin-top: 2px;">Review word timings and spellings before export. Spoken timings start at 0:00 relative to clip slice.</div>
+      </div>
+    `;
+    list.appendChild(warn);
+  }
+
   if (!currentClip.words || currentClip.words.length === 0) {
-    list.innerHTML = `
-      <div class="empty-captions-box" style="padding: 24px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-        <span style="font-size: 28px;">💬</span>
-        <div style="font-weight: 600; color: #FFF;">No word-level captions detected</div>
-        <p style="font-size: 13px; color: var(--text-muted); max-width: 260px;">Generate animated karaoke word captions for this clip using Whisper AI.</p>
-        <button type="button" id="btn-editor-gen-captions" class="btn-primary" style="padding: 8px 18px; font-size: 13px;">
-          <span>⚡ Generate Captions</span>
-        </button>
-      </div>`;
-    const genBtn = document.getElementById("btn-editor-gen-captions");
+    const emptyBox = document.createElement("div");
+    emptyBox.className = "empty-captions-box";
+    emptyBox.style.cssText = "padding: 24px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;";
+    emptyBox.innerHTML = `
+      <span style="font-size: 28px;">💬</span>
+      <div style="font-weight: 600; color: #FFF;">No word-level captions detected</div>
+      <p style="font-size: 13px; color: var(--text-muted); max-width: 260px;">Generate animated karaoke word captions for this clip using Whisper AI.</p>
+      <button type="button" id="btn-editor-gen-captions" class="btn-primary" style="padding: 8px 18px; font-size: 13px;">
+        <span>⚡ Generate Captions</span>
+      </button>
+    `;
+    list.appendChild(emptyBox);
+    const genBtn = emptyBox.querySelector("#btn-editor-gen-captions");
     if (genBtn) {
       genBtn.addEventListener("click", async () => {
         genBtn.disabled = true;
@@ -1400,14 +1518,17 @@ function renderEditorCaptionsList() {
   }
 
   if (activeCaptionMode === "words") {
-    // Full word-by-word editor with timestamps
+    // Relative word-by-word editor with timestamps (0:00 to end)
     currentClip.words.forEach((w, idx) => {
+      const relStart = Math.max(0, (w.start || 0) - clipStart);
+      const relEnd = Math.max(relStart, (w.end || (relStart + 0.3)) - clipStart);
+
       const item = document.createElement("div");
       item.className = "caption-word-item";
       item.innerHTML = `
-        <input type="text" class="word-timing-input start" value="${Number(w.start).toFixed(2)}" title="Start time (s)">
+        <input type="text" class="word-timing-input start" value="${relStart.toFixed(2)}" title="Relative start time (s)">
         <input type="text" class="word-text-input" value="${w.word}">
-        <input type="text" class="word-timing-input end" value="${Number(w.end).toFixed(2)}" title="End time (s)">
+        <input type="text" class="word-timing-input end" value="${relEnd.toFixed(2)}" title="Relative end time (s)">
         <button type="button" class="btn-del-word" title="Remove word">✕</button>
       `;
 
@@ -1423,13 +1544,13 @@ function renderEditorCaptionsList() {
 
       startInp.addEventListener("change", (e) => {
         const val = parseFloat(e.target.value);
-        if (!isNaN(val)) w.start = val;
+        if (!isNaN(val)) w.start = clipStart + Math.max(0, val);
         flashSavedStatus();
       });
 
       endInp.addEventListener("change", (e) => {
         const val = parseFloat(e.target.value);
-        if (!isNaN(val)) w.end = val;
+        if (!isNaN(val)) w.end = clipStart + Math.max(0, val);
         flashSavedStatus();
       });
 
@@ -1442,13 +1563,16 @@ function renderEditorCaptionsList() {
       list.appendChild(item);
     });
   } else {
-    // Lines mode: chunked by 5 words
+    // Lines mode: chunked by 5 words with relative timestamps
     const lines = chunkWordsIntoLines(currentClip.words);
     lines.forEach((line, lineIdx) => {
+      const relLineStart = Math.max(0, line.start - clipStart);
+      const relLineEnd = Math.max(relLineStart, line.end - clipStart);
+
       const lineBox = document.createElement("div");
       lineBox.className = "caption-line-block";
       lineBox.innerHTML = `
-        <div class="line-header" style="font-size:0.78rem;color:#818CF8;margin-bottom:4px;">Line ${lineIdx + 1} (${line.start.toFixed(1)}s - ${line.end.toFixed(1)}s)</div>
+        <div class="line-header" style="font-size:0.78rem;color:#818CF8;margin-bottom:4px;">Line ${lineIdx + 1} (${relLineStart.toFixed(1)}s - ${relLineEnd.toFixed(1)}s)</div>
         <textarea class="line-text-input" rows="2" style="width:100%;padding:6px;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#fff;">${line.text}</textarea>
       `;
       const ta = lineBox.querySelector(".line-text-input");
@@ -1608,7 +1732,7 @@ function initTrimHandles() {
       const dur = currentClip.duration || 30;
       const tStart = (startPct / 100) * dur;
       const tEnd = (endPct / 100) * dur;
-      durDisplay.innerText = `Trim: ${formatTime(tStart)} - ${formatTime(tEnd)} (${(tEnd - tStart).toFixed(1)}s)`;
+      durDisplay.innerText = `Trim: ${formatDuration(tStart)} - ${formatDuration(tEnd)} (${(tEnd - tStart).toFixed(1)}s)`;
       currentClip.trim_start = tStart;
       currentClip.trim_end = tEnd;
     }
@@ -1691,6 +1815,18 @@ function renderEditorScoresSummary(clip) {
 }
 
 function syncEditorWithClipState() {
+  if (currentClip) {
+    if (typeof currentClip.captions_on === "boolean") {
+      customCaptionStyle.enabled = currentClip.captions_on;
+    } else {
+      customCaptionStyle.enabled = true;
+      currentClip.captions_on = true;
+    }
+    const capToggle = document.getElementById("style-captions-on-toggle");
+    if (capToggle) capToggle.checked = customCaptionStyle.enabled;
+    const liveCap = document.getElementById("editor-live-caption");
+    if (liveCap) liveCap.style.display = customCaptionStyle.enabled ? "block" : "none";
+  }
   applyCustomStyleToPreview();
 }
 

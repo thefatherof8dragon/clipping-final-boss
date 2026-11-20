@@ -26,13 +26,21 @@ except Exception:
 _CACHED_HEALTH_BINARIES: Dict[str, Any] = {}
 _LAST_BINARY_CHECK_TS: float = 0.0
 
-def _get_cached_binaries() -> Dict[str, Any]:
+def _get_cached_binaries(force_refresh: bool = False) -> Dict[str, Any]:
     global _CACHED_HEALTH_BINARIES, _LAST_BINARY_CHECK_TS
     now = time.time()
-    if _CACHED_HEALTH_BINARIES and (now - _LAST_BINARY_CHECK_TS < 180.0):
+    curr_ffmpeg = find_ffmpeg()
+    curr_ffprobe = find_ffprobe()
+    if (
+        not force_refresh
+        and _CACHED_HEALTH_BINARIES
+        and (now - _LAST_BINARY_CHECK_TS < 180.0)
+        and _CACHED_HEALTH_BINARIES.get("ffmpeg", {}).get("bin") == curr_ffmpeg
+        and _CACHED_HEALTH_BINARIES.get("ffprobe", {}).get("bin") == curr_ffprobe
+    ):
         return _CACHED_HEALTH_BINARIES
 
-    ffmpeg_bin = find_ffmpeg()
+    ffmpeg_bin = curr_ffmpeg
     ffmpeg_ok = False
     ffmpeg_ver = ""
     if shutil.which(ffmpeg_bin) or (os.path.isabs(ffmpeg_bin) and os.path.exists(ffmpeg_bin)):

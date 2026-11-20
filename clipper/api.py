@@ -526,6 +526,7 @@ def api_regenerate_text(clip_id: str):
     save_session_data(s_dir, s_data)
     return clip
 
+@app.get("/api/clips/{clip_id}/hook-alternatives")
 @app.post("/api/clips/{clip_id}/hook-alternatives")
 def api_get_hook_alternatives(clip_id: str):
     """Generate 3 viral hook overlay alternatives for the clip."""
@@ -801,7 +802,7 @@ def api_toggle_watch(streamer_id: str):
         return {"is_watching": False, "is_live": streamer.get("is_live", False)}
     else:
         if not streamer.get("is_live"):
-            raise HTTPException(status_code=400, detail="Cannot watch an offline streamer")
+            return {"is_watching": False, "is_live": False, "error": "Cannot watch an offline streamer"}
         success = start_watching(streamer_id)
         return {"is_watching": success, "is_live": True}
 

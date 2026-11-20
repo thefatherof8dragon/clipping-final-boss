@@ -4260,4 +4260,82 @@ input[type="checkbox"]:checked::before {
     padding: 6px 12px;
     gap: 8px;
   }
+
+  /* Global mobile responsiveness (no horizontal scroll or clipping) */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  .app-container {
+    padding: 10px;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  .header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .header-left {
+    min-width: 0;
+  }
+  .logo-text h1 {
+    font-size: 16px;
+  }
+  .nav-tabs {
+    overflow-x: auto;
+    max-width: 100%;
+    scrollbar-width: none;
+  }
+  .header-right {
+    display: none;
+  }
+  .source-bar-card {
+    padding: 14px 12px;
+    max-width: 100%;
+  }
+  .form-main-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .url-input-wrapper {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  .url-input-wrapper input {
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+  .top-n-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .top-n-wrapper input {
+    width: 80px;
+  }
+  #btn-make-clips {
+    width: 100%;
+    justify-content: center;
+  }
+  .length-chips {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .clips-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .toolbar-left, .toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .video-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

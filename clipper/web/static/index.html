@@ -320,6 +320,15 @@
             </div>
           </div>
 
+          <!-- Top N quality threshold explanation note -->
+          <div id="clips-top-n-notice" class="clips-quality-note hidden" style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #C7D2FE; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:16px;">💡</span>
+              <span id="clips-top-n-text">Showing clips exceeding virality threshold.</span>
+            </div>
+            <span class="badge badge-subtle" style="font-size:11px; background:rgba(99, 102, 241, 0.2); color:#E0E7FF;">Virality Filter</span>
+          </div>
+
           <!-- Video Cards Grid -->
           <div id="clips-grid" class="video-grid" role="region" aria-label="Ranked video clips">
             <!-- Problem 2: Clean Empty State -->
@@ -606,24 +615,23 @@
               <div class="form-group">
                 <label for="hook-text-input" class="control-label">Hook Text (First 3-5 seconds)</label>
                 <textarea id="hook-text-input" rows="2" placeholder="e.g. WAIT FOR THE END..."></textarea>
+                <small class="subtext hook-match-note" style="display:block; margin-top:4px; color:#94A3B8;">Note: Check that the hook matches the clip.</small>
               </div>
 
               <!-- 3 AI Hook Alternatives (Problem 7) -->
               <div class="form-group">
-                <label class="control-label">AI-Suggested Hook Alternatives (Click to apply)</label>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <label class="control-label" style="margin-bottom:0;">AI Hook Alternatives</label>
+                  <span id="hook-ai-model-badge" class="badge badge-subtle" style="font-size:10px; color:#94A3B8;">Local NLP</span>
+                </div>
                 <div id="hook-alternatives-list" class="hook-alternatives-list">
-                  <button type="button" class="hook-alt-btn" data-alt-angle="Curiosity">
-                    <span class="alt-badge">Curiosity</span>
-                    <span class="alt-text">Nobody expected what came next...</span>
-                  </button>
-                  <button type="button" class="hook-alt-btn" data-alt-angle="Shock">
-                    <span class="alt-badge badge-red">Shock</span>
-                    <span class="alt-text">The most unbelievable reaction live!</span>
-                  </button>
-                  <button type="button" class="hook-alt-btn" data-alt-angle="Question">
-                    <span class="alt-badge badge-yellow">Question</span>
-                    <span class="alt-text">Why did nobody see this coming?!</span>
-                  </button>
+                  <!-- Grounded in transcript / AI -->
+                </div>
+                <button type="button" id="btn-suggest-hooks" class="btn-secondary" style="margin-top:8px; width:100%; font-size:12px; padding:6px 10px;">
+                  ✨ Suggest Alternatives
+                </button>
+                <div id="hook-ai-key-hint" class="subtext" style="margin-top:6px; font-size:11px; color:#64748B;">
+                  Using transcript-grounded extraction. Add AI key in Settings for cloud AI.
                 </div>
               </div>
 
